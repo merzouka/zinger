@@ -7,6 +7,7 @@ include AUTOLOADER;
 
 use DatabaseDefinition\Src\Console\ConsoleOutputFormatter;
 use DatabaseDefinition\Src\Console\OutputType;
+use DatabaseDefinition\Src\Helpers\TableParser;
 use DatabaseDefinition\Src\TableFactory;
 use DatabaseDefinition\Src\TableType;
 use Error;
@@ -31,8 +32,9 @@ class CreateCommandHelper{
      * @param boolean $verbose true => enable output
      * @return void
      */
-    public static function createPivots(?array $tables = null, bool $verbose = false){
+    public static function pivot(?array $tables = null, bool $verbose = false){
         static::setPath();
+        $tablesFromUser = true;
         if ($tables === null || in_array("*", $tables)){
             $tables = [];
             foreach(scandir(static::$path . "tables") as $file){
@@ -41,17 +43,15 @@ class CreateCommandHelper{
                 }
                 $tables[] = (explode(".", $file))[0];
             }
+            $tablesFromUser = false;
         }
+
         $error = false;
         foreach ($tables as $table){
             try{
-                (TableFactory::createTable($table, TableType::Table, true))->createPivots();
-
+                (TableFactory::createTable($table, TableType::Table, true))->createPivots($verbose);
             } catch (Error $e){
-                if ($verbose){
-                    $error = true;
-                    (new ConsoleOutputFormatter(OutputType::Error, $e->getMessage()))->out();
-                }
+                (new ConsoleOutputFormatter(OutputType::Error, $e->getMessage()))->out();
             }
         }
         if ($error && $verbose){
@@ -59,6 +59,24 @@ class CreateCommandHelper{
         }
     }
 
+    public static function table(string $tableName, bool $isBase = false){
+        if (TableParser::tableExists($tableName, TableType::Table)){
+            (new ConsoleOutputFormatter(OutputType::Error, "Table '$tableName' already exists."));
+        }
+        $formatFile = !$isBase ? "tableFormat.php" : "baseTableFormat.php";
+        $formatPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . "table" . DIRECTORY_SEPARATOR . $formatFile;
+        include_once $formatPath;
+        $tablePath = TableParser::getPath(TableType::Table) . $tableName . TABLE_FILE_SUFFIX;
+        $file = fopen($tablePath, "w");
+        fwrite($file, $str);
+        fclose($file);
+    }
+
+    public static function base(string $tableName){
+        static::table($tableName, true);
+    }
+
 }
 
-CreateCommandHelper::createPivots(verbose:true);
+
+CreateCommandHelper::table("shops");
