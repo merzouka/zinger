@@ -61,7 +61,8 @@ class CreateCommandHelper{
 
     public static function table(string $tableName, bool $isBase = false){
         if (TableParser::tableExists($tableName, TableType::Table)){
-            (new ConsoleOutputFormatter(OutputType::Error, "Table '$tableName' already exists."));
+            (new ConsoleOutputFormatter(OutputType::Error, "Table '$tableName' already exists."))->out();
+            return;
         }
         $formatFile = !$isBase ? "tableFormat.php" : "baseTableFormat.php";
         $formatPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . "table" . DIRECTORY_SEPARATOR . $formatFile;
