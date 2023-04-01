@@ -7,15 +7,19 @@ include AUTOLOADER;
 
 use DatabaseDefinition\Src\Console\ConsoleOutputFormatter;
 use DatabaseDefinition\Src\Console\OutputType;
+use DatabaseDefinition\Src\Error\BaseTableError;
+use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\TableParser;
 use DatabaseDefinition\Src\TableFactory;
 use DatabaseDefinition\Src\TableType;
-use Error;
 
+/**
+ * handles create commands
+ */
 class CreateCommandHelper{
     private static string $path;
 
-    public static function setPath(){
+    private static function setPath(){
         if (isset($path)){
             return;
         }
@@ -45,12 +49,19 @@ class CreateCommandHelper{
             }
             $tablesFromUser = false;
         }
-
         $error = false;
         foreach ($tables as $table){
             try{
                 (TableFactory::createTable($table, TableType::Table, true))->createPivots($verbose);
-            } catch (Error $e){
+            } catch (CustomError|BaseTableError $e){
+                if ($e::class === "DatabaseDefinition\\Src\\Error\\BaseTableError" && $tablesFromUser){
+                    (new ConsoleOutputFormatter(OutputType::Error, $e->getMessage()))->out();
+                    $error = true;
+                    continue;
+                } else if (!$tablesFromUser){
+                    continue;
+                }
+                $error = true;
                 (new ConsoleOutputFormatter(OutputType::Error, $e->getMessage()))->out();
             }
         }
@@ -59,25 +70,43 @@ class CreateCommandHelper{
         }
     }
 
-    public static function table(string $tableName, bool $isBase = false){
-        if (TableParser::tableExists($tableName, TableType::Table)){
-            (new ConsoleOutputFormatter(OutputType::Error, "Table '$tableName' already exists."))->out();
-            return;
-        }
+    /**
+     * creates tables $tables
+     *
+     * @param array $tables
+     * @param boolean $isBase
+     * @return void
+     */
+    public static function table(array $tables, bool $isBase = false){
         $formatFile = !$isBase ? "tableFormat.php" : "baseTableFormat.php";
         $formatPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . "table" . DIRECTORY_SEPARATOR . $formatFile;
-        include_once $formatPath;
-        $tablePath = TableParser::getPath(TableType::Table) . $tableName . TABLE_FILE_SUFFIX;
-        $file = fopen($tablePath, "w");
-        fwrite($file, $str);
-        fclose($file);
+        foreach ($tables as $tableName){
+            if (TableParser::tableExists($tableName, TableType::Table)){
+                (new ConsoleOutputFormatter(OutputType::Error, "Table '$tableName' already exists."))->out();
+                echo PHP_EOL;
+                return;
+            }
+            include_once $formatPath;
+            $tablePath = TableParser::getPath(TableType::Table) . $tableName . TABLE_FILE_SUFFIX;
+            $file = fopen($tablePath, "w");
+            fwrite($file, $str);
+            fclose($file);
+            (new ConsoleOutputFormatter(OutputType::Created, ($isBase ? " base " : "")."table '$tableName'."))->out();
+            echo PHP_EOL;
+        }
+        
     }
 
-    public static function base(string $tableName){
-        static::table($tableName, true);
+    /**
+     * creates base tables $tables
+     *
+     * @param array $tables
+     * @return void
+     */
+    public static function base(array $tables){
+        static::table($tables, true);
     }
 
 }
 
-
-CreateCommandHelper::table("shops");
+CreateCommandHelper::table(["hops", "lops"]);

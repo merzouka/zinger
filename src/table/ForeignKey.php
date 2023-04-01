@@ -2,14 +2,16 @@
 
 namespace DatabaseDefinition\Src\Table;
 
+use DatabaseDefinition\Src\Error\CustomError;
+use DatabaseDefinition\Src\Helpers\StringOper as SO;
 use Error;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\ForeignKeyDefinition;
-use Symfony\Component\CssSelector\Exception\SyntaxErrorException;
 
 class ForeignKey{
 
     public array $keyInfo;
+    private array $keyColumns;
     
 
     private function  __construct(){}
@@ -75,7 +77,7 @@ class ForeignKey{
             $method = (array_keys($this->keyInfo))[$index];
             $result = call_user_func_array([$def, $method], [$this->keyInfo[$method]]);
         } catch (Error $e){
-            throw new SyntaxErrorException($e->getMessage());
+            throw new CustomError($e->getMessage());
         }
         $this->applyForeignProperties($result, $foreignKey, $index + 1);
     }
@@ -94,7 +96,7 @@ class ForeignKey{
         }
         try {
             $this->applyForeignProperties($result, $this->keyInfo);
-        } catch (SyntaxErrorException $e){
+        } catch (CustomError $e){
             return $e->getMessage();
         }
         return null;
@@ -111,4 +113,25 @@ class ForeignKey{
         return $str . ")";
         
     }
+
+    public function prepareKeyColumns(){
+        $this->keyColumns = [
+            $this->keyInfo["foreign"],
+            $this->keyInfo["references"],
+            $this->keyInfo["on"],
+            $this->keyInfo["onUpdate"] ?? "",
+            $this->keyInfo["onDelete"] ?? ""
+        ];
+        return array_map(fn($str) => strlen($str), $this->keyColumns);
+    }
+
+    public function display(array $lengths){
+        $contents = implode(" | ", array_map(
+            fn($str, $length) => SO::addChars($str, $length),
+            $this->keyColumns,
+            $lengths
+        ));
+        echo "| $contents |" . PHP_EOL;
+    }
+
 }

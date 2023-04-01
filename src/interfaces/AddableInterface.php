@@ -13,4 +13,18 @@ interface AddableInterface{
      * following the conventions used by laravel
      */
     public function addInfo(Blueprint &$table);
+
+    /**
+     * puts the addable info into an array attribute to be later displayed
+     *
+     * @return array the lengths of each column of addable
+     */
+    public function prepareRowColumns() : array;
+
+    /**
+     * display the current addable to console
+     *
+     * @return void
+     */
+    public function display(array $lengths);
 }

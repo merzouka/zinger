@@ -6,6 +6,7 @@ include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_S
 
 use DatabaseDefinition\Src\Console\ConsoleOutputFormatter;
 use DatabaseDefinition\Src\Console\OutputType;
+use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\DefinitionHelper as DH;
 use DatabaseDefinition\Src\Table\Column;
 use DatabaseDefinition\Src\Table\Table;
@@ -16,17 +17,19 @@ use DatabaseDefinition\Src\TableType;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\CssSelector\Exception\SyntaxErrorException;
 
 class PivotTable extends Table{
 
+    #region properties
     private string $childPrimaryPropertyName;
     public array $tableSampleIds;
-
-    public function __construct(?array &$fileContents, string $primaryPropertyName)
+    #endregion
+    
+    #region constructors
+    public function __construct(?array &$fileContents, string $primaryPropertyName, bool $doRelations = false)
     {
         $this->childPrimaryPropertyName = $primaryPropertyName;
-        parent::__construct($fileContents);
+        parent::__construct($fileContents, $doRelations);
         $columns = DH::getInfoByPart("COLUMNS", $fileContents);
         // adding primary keys
         $this->{$this->childPrimaryPropertyName} = array_values(array_map(fn ($column) => PrimaryKey::toBeUsed($column), 
@@ -41,6 +44,8 @@ class PivotTable extends Table{
             $i++;
         }
     }
+    #endregion
+
     #region add primary keys
 
     /**
@@ -54,8 +59,8 @@ class PivotTable extends Table{
         foreach ($this->{$this->childPrimaryPropertyName} as $primary){
             try{
                 $primary->addInfo($table);
-            } catch (SyntaxErrorException $e){
-                throw new SyntaxErrorException($e->getMessage() . " In Pivot Table " . $this->name);
+            } catch (CustomError $e){
+                throw new CustomError($e->getMessage() . " In Pivot Table " . $this->name);
             }
         }
     }
@@ -128,7 +133,7 @@ COLUMNS:
      *
      * @return void
      */
-    public function write(){
+    public function write(bool $verbose = false){
         if (TableParser::tableExists($this->name, TableType::Pivot)){
             return;
         }
@@ -136,7 +141,9 @@ COLUMNS:
         $file = fopen($filePath, "w");
         fwrite($file, (string)$this);
         fclose($file);
-        (new ConsoleOutputFormatter(OutputType::Created, "new pivot [\e[1m$filePath\e[0m]."))->out();
+        if ($verbose){
+            (new ConsoleOutputFormatter(OutputType::Created, "new pivot [\e[1m$filePath\e[0m]."))->out();
+        }
     }
 
     public function seed(int $number = 0, bool $rehydrate = false){
@@ -146,4 +153,36 @@ COLUMNS:
     }
 
     #endregion
+
+    #region display
+    protected function fillLengths(
+        string $attName,
+        string $prepareMethod,
+        array $headerArray,
+        bool $hasPrimary = true
+    ){
+        parent::fillLengths($attName, $prepareMethod, $headerArray);
+        if (!$hasPrimary){
+            return;
+        }
+        foreach ($this->{$this->childPrimaryPropertyName} as $primary){
+            $this->lengths = array_map(
+                fn($v1, $v2) => max($v1, $v2),
+                $this->lengths,
+                $primary->prepareRowColumns()
+            );
+        }
+    }
+
+    public function displayColumns(bool $updateLengths = false)
+    {
+        $this->fillLengths("columns", "prepareRowColumns", parent::TABLE_COLUMNS);
+        $this->printHeader(parent::TABLE_COLUMNS);
+        foreach ($this->{$this->childPrimaryPropertyName} as $primary){
+            $primary->display($this->lengths);
+        }
+        parent::displayColumns();
+    }
+    #endregion
+
 }

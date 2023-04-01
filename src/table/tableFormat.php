@@ -1,8 +1,12 @@
-EXCLUDE:
-NAME: shops
+<?php
+
+$str = 
+"EXCLUDE:
+NAME: $tableName
 MODEL: 
 RECORDS:
 FOREIGN_KEYS:
 RELATIONS:
 HAS_TIMESTAMPS: true
 COLUMNS:
+";

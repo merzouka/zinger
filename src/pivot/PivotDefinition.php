@@ -6,6 +6,7 @@ namespace DatabaseDefinition\Src\Pivot;
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include AUTOLOADER;
 
+use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Table\TableDefinition;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
 use DatabaseDefinition\Src\Helpers\TableParser;
@@ -13,20 +14,20 @@ use DatabaseDefinition\Src\Table\ForeignKey;
 use DatabaseDefinition\Src\Pivot\PivotTable;
 use DatabaseDefinition\Src\TableFactory;
 use DatabaseDefinition\Src\TableType;
-use Error;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 
 class PivotDefinition extends PivotTable
 {
-
+    #region properties
     public array $primaryKeys;
-
+    #endregion
+    
     #region constructors
-    private function __construct(?array &$fileContents = null)
+    private function __construct(?array &$fileContents = null, bool $doRelations = false)
     {
         if ($fileContents !== null) {
-            parent::__construct($fileContents, "primaryKeys");
+            parent::__construct($fileContents, "primaryKeys", $doRelations);
         }
     }
 
@@ -91,10 +92,9 @@ class PivotDefinition extends PivotTable
      * @param string $tableName
      * @return PivotDefinition
      */
-    public static function toBeUsed(?array &$fileContents): PivotDefinition
+    public static function toBeUsed(?array &$fileContents, bool $doRelations = false): PivotDefinition
     {
-
-        return new PivotDefinition($fileContents);
+        return new PivotDefinition($fileContents, $doRelations);
     }
     #endregion
 
@@ -185,7 +185,7 @@ class PivotDefinition extends PivotTable
                 return $foreignKey->keyInfo["foreign"];
             }
         }
-        throw new Error("Foreign Column for '$tableName' doesn't exist.");
+        throw new CustomError("Foreign Column for '$tableName' doesn't exist.");
     }
     #endregion
 

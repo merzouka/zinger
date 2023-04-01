@@ -5,14 +5,12 @@ namespace DatabaseDefinition\Src\Pivot;
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include AUTOLOADER;
 
-
+use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
 use DatabaseDefinition\Src\Interfaces\AddableInterface;
-
 use Error;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
-use Symfony\Component\CssSelector\Exception\SyntaxErrorException;
 
 class PrimaryKey implements AddableInterface{
 
@@ -20,6 +18,7 @@ class PrimaryKey implements AddableInterface{
     public ?string $jsonName;
     public array $type;
     public array $properties;
+    private array $rowColumns;
 
     #region constructors
     private function __construct(){}
@@ -61,7 +60,7 @@ class PrimaryKey implements AddableInterface{
     {
         $method = SO::getMethod($this->type);
         $properties = implode(", ", $this->properties);
-        return "[*PRIMARY*]{$this->name}, null, false, null, {$method}". ($properties === "" ? "" : ", ". $properties) . ";";
+        return "[*PRIMARY*]{$this->name}, null, {$method}". ($properties === "" ? "" : ", ". $properties) . ";";
     }
 
     /**
@@ -87,12 +86,36 @@ class PrimaryKey implements AddableInterface{
             $this->type["params"][0] = $this->name;
             $column = call_user_func_array([$table, $this->type["method"]], $this->type["params"]);
         } catch (Error $e) {
-            throw new Error("Error : " . $e->getMessage() . " In Primary Column " . $this->name);
+            throw new CustomError("Error : " . $e->getMessage() . " In Primary Column " . $this->name);
         }
         $result = $this->applyProperties($column, $this->properties, 0);
         if ($result !== null){
-            throw new SyntaxErrorException("Error : " . $result . " In Primary Column " . $this->name);
+            throw new CustomError("Error : " . $result . " In Primary Column " . $this->name);
         }
+    }
+    #endregion
+
+    #region display
+
+    public function prepareRowColumns() : array{
+        $this->rowColumns = [
+            $this->name,
+            $this->jsonName,
+            CROSS,
+            "null",
+            SO::getMethod($this->type),
+            implode(", ", $this->properties)
+        ];
+        return array_map(fn($str) => ($str == CROSS) ? 1 : strlen($str), $this->rowColumns);
+    }
+
+    public function display(array $lengths){
+        $contents = implode(" | ", array_map(
+            fn($str, $length) => SO::addChars($str, $length),
+            $this->rowColumns,
+            $lengths
+        ));
+        echo "| $contents |[*PRIMARY*]" . PHP_EOL;
     }
     #endregion
 

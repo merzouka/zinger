@@ -5,10 +5,10 @@ namespace DatabaseDefinition\Src\Helpers;
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include \AUTOLOADER;
 
+use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
 use DatabaseDefinition\Src\Helpers\TableParser;
 use DatabaseDefinition\Src\TableType;
-use Error;
 
 class DefinitionHelper
 {
@@ -65,7 +65,7 @@ class DefinitionHelper
                 return $i;
             }
         }
-        throw new Error("'$needle' doesn't exist");
+        throw new CustomError("'$needle' doesn't exist");
     }
 
     #endregion

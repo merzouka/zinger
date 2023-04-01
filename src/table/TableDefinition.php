@@ -5,40 +5,31 @@ namespace DatabaseDefinition\Src\Table;
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include AUTOLOADER;
 
+use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\DefinitionHelper as DH;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
-use DatabaseDefinition\Src\Relationship\Relation;
 use DatabaseDefinition\Src\Table\Column;
 use DatabaseDefinition\Src\TableFactory;
-use DatabaseDefinition\Src\TableType;
-use Error;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-use function PHPUnit\Framework\fileExists;
 
 class TableDefinition extends Table
 {
-    #region attributes
+    #region properties 
     public ?string $modelName;
     public string $primaryKeyName;
-    private ?array $relations;
     public array $fillable;
     public array $includes;
     #endregion
 
-
+    #region constructor
     public function __construct(?array $fileContents, bool $doRelations = false)
     {
-        parent::__construct($fileContents);
+        parent::__construct($fileContents, $doRelations);
         // setting properties
         $this->modelName = DH::getInfoByPart("MODEL", $fileContents);
-        $this->relations = [];
-        if ($doRelations){
-            foreach (DH::getInfoByPart("RELATIONS", $fileContents) as $relationInfo){
-                $this->relations[] = new Relation($relationInfo, $this);
-            }
-        }
         // adding columns
         $i = 0;
         foreach (DH::getInfoByPart("COLUMNS", $fileContents) as $column){
@@ -51,8 +42,8 @@ class TableDefinition extends Table
             $this->columns[] = new Column($column, $i);
             $i++;
         }
-        unset($fileContents);
     }
+    #endregion
 
     #region main functions
     /**
@@ -158,7 +149,7 @@ class TableDefinition extends Table
         // getting model contents
         $modelPath = ROOT_DIR. "app" . DIRECTORY_SEPARATOR . "Models" . DIRECTORY_SEPARATOR . $this->modelName . ".php";
         if (!file_exists($modelPath)){
-            throw new Error("Model '{$this->modelName}' doesn't exist.");
+            throw new CustomError("Model '{$this->modelName}' doesn't exist.");
         }
         $file = fopen($modelPath, "r");
         $modelFileContents = explode(PHP_EOL, fread($file, filesize($modelPath)));
@@ -173,8 +164,8 @@ class TableDefinition extends Table
 
             $relationStart = DH::arrayFindFromOffset("START_RELATIONSHIPS", $modelFileContents, $attEnd + 1);
             $relationEnd = DH::arrayFindFromOffset("END_RELATIONSHIPS", $modelFileContents, $relationStart + 1);
-        } catch (Error $e){
-            throw new Error($e->getMessage() . " in model '{$this->modelName}'.");
+        } catch (CustomError $e){
+            throw new CustomError($e->getMessage() . " in model '{$this->modelName}'.");
         }
 
         $relationFunctions = [];
@@ -190,13 +181,20 @@ class TableDefinition extends Table
         fclose($file);
     }
 
-    public function createPivots(){
+    public function createPivots(bool $verbose = false){
         foreach ($this->relations as $relation){
-            $relation->createPivot();
+            $relation->createPivot($verbose);
         }
+    }
+    #endregion
+
+    #region display
+    public function displayInfo(bool $hasModelName = true)
+    {
+        parent::displayInfo(true);
     }
     #endregion
 
 }
 
-TableFactory::createTable("hello", TableType::Table);
+TableFactory::createTable("invoices", doRelations:true)->display();

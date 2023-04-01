@@ -20,14 +20,15 @@ use Illuminate\Support\Facades\DB;
  */
 class MorphPivotDefinition extends PivotTable
 {
-
+    #region properties
     public array $primaryColumns;
+    #endregion
 
     #region constructors
-    private function __construct(?array &$fileContents = null)
+    private function __construct(?array &$fileContents = null, bool $doRelations = false)
     {
         if ($fileContents !== null) {
-            parent::__construct($fileContents, "primaryColumns");
+            parent::__construct($fileContents, "primaryColumns", $doRelations);
         }
     }
 
@@ -105,9 +106,9 @@ class MorphPivotDefinition extends PivotTable
      * @param string $tableName
      * @return MorphPivotDefinition
      */
-    public static function toBeUsed(?array &$fileContents): MorphPivotDefinition
+    public static function toBeUsed(?array &$fileContents, bool $doRelations = false): MorphPivotDefinition
     {
-        return new MorphPivotDefinition($fileContents);
+        return new MorphPivotDefinition($fileContents, $doRelations);
     }
     #endregion 
 

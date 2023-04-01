@@ -11,7 +11,7 @@ class BaseTableError extends Error{
     public function __construct(string $tableName)
     {
         $this->tableName = $tableName;
-        parent::__construct("Base table '{$tableName}' is not creatable.");
+        parent::__construct("Base table '{$tableName}' doesn't support 'create' operations.");
     }
 
 }

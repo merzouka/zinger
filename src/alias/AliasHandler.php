@@ -5,8 +5,8 @@ namespace DatabaseDefinition\Src\Alias;
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include \AUTOLOADER;
 
+use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
-use Error;
 
 class AliasHandler{
 
@@ -63,7 +63,6 @@ class AliasHandler{
      * @return string
      */
     private static function formatArrayToString(array $array, string $prefix = "") : string{
-        var_dump($array);
         $result = "[".PHP_EOL;
         $aliasStrings = [];
         foreach ($array as $key => $value){
@@ -162,8 +161,7 @@ class AliasHandler{
         if (isset(static::$aliases["GENERAL"])){
             return static::$aliases["GENERAL"];
         }
-
-        throw new Error("Alias '". $aliasName ."' Not Found");
+        throw new CustomError("Alias '". $aliasName ."' Not Found");
 
     }
     #endregion
@@ -174,7 +172,7 @@ class AliasHandler{
         $pivotTableAliases = static::getArrayByNameOrGENERAL($pivotTableName);
         $alias = static::getKeyRecursively($associatedTableName, $pivotTableAliases);
         if ($alias === false){
-            throw new Error("Alias for table '$associatedTableName' doesn't exist in '$pivotTableName'.");
+            throw new CustomError("Alias for table '$associatedTableName' doesn't exist in '$pivotTableName'.");
         } 
         return $alias;
     }
@@ -183,7 +181,7 @@ class AliasHandler{
         $pivotAliases = static::getArrayByNameOrGENERAL($pivotTableName);
         $table = static::getValueRecursively($alias, $pivotAliases);
         if ($table === null){
-            throw new Error("Alias '$alias' doesn't exist in '$pivotTableName' array");
+            throw new CustomError("Alias '$alias' doesn't exist in '$pivotTableName' array");
         }
         return $table;
     }
@@ -192,7 +190,7 @@ class AliasHandler{
         $modelName = SO::last(explode("\\", $modelName));
         $modelAliases = static::getArrayByNameOrGENERAL("MODELS");
         if (!isset($modelAliases[$modelName])){
-            throw new Error("Alias for '$modelName' doesn't exist.");
+            throw new CustomError("Alias for '$modelName' doesn't exist.");
         }
         return $modelAliases[$modelName];
     }
@@ -200,11 +198,11 @@ class AliasHandler{
     public static function getTableModel(string $tableName){
         $models = static::getArrayByNameOrGENERAL("MODELS");
         if (!isset(static::$aliases["MODELS"])){
-            throw new Error("'MODELS' is not set.");
+            throw new CustomError("'MODELS' is not set.");
         }
         $modelName = array_search($tableName, $models);
         if ($modelName === false){
-            throw new Error("No associated models for table '$tableName'.");
+            throw new CustomError("No associated models for table '$tableName'.");
         }
         return "App\\Models\\" . $modelName;
     }
@@ -222,7 +220,7 @@ class AliasHandler{
         $prefixArray = static::getPrefixAliases($prefix, $pivotTableName);
         $alias = array_search($tableName, $prefixArray);
         if ($alias === false){
-            throw new Error("Alias not found in '$pivotTableName[$prefix]' for table '$tableName'");
+            throw new CustomError("Alias not found in '$pivotTableName[$prefix]' for table '$tableName'");
         }
         return $alias;
     }
@@ -230,7 +228,7 @@ class AliasHandler{
     public static function getPrefixAliases(string $prefix, string $pivotTableName) : array{
         $pivotAliases = static::getArrayByNameOrGENERAL($pivotTableName);
         if (!isset($pivotAliases[$prefix]) || !is_array($pivotAliases[$prefix])){
-            throw new Error("Prefix '$prefix' doesn't exist in $pivotTableName.");
+            throw new CustomError("Prefix '$prefix' doesn't exist in $pivotTableName.");
         }
         return $pivotAliases[$prefix];
     }

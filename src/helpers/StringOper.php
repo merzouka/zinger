@@ -77,8 +77,26 @@ class StringOper{
 
     public static function arrayToString(array $arr) : string{
         return "[". implode(", ", array_map(
-            fn($element) => (is_array($element)) ? static::arrayToString($element) : $element, $arr
+            fn($element) => (is_array($element)) ?
+            static::arrayToString($element) :
+            static::translateValueByType($element), $arr
         )). "]";
+    }
+
+    /**
+     * formats value if string return 'value'  if null return NULL
+     *
+     * @param mixed $value
+     * @return string
+     */
+    public static function translateValueByType(mixed $value) : string{
+        if (gettype($value) == "string"){
+            return "'$value'";
+        }
+        if (gettype($value) == "NULL"){
+            return "NULL";
+        }
+        return "" . $value;
     }
 
     /**
@@ -89,7 +107,7 @@ class StringOper{
      */
     public static function getParams(array $params, int $startingIndex = 0) : string{
         return implode(", ", array_map(
-            fn($element) => is_array($element) ? static::arrayToString($element) : $element,
+            fn($element) => is_array($element) ? static::arrayToString($element) : static::translateValueByType($element),
             array_slice($params, $startingIndex)
         ));
     }
@@ -108,6 +126,9 @@ class StringOper{
         $str = $methodInfo["method"];
         $start = (!$isTypeMethod) ? 0 : (count($methodInfo["params"]) > 1 ? 1 : -1);
         if ($start >= 0){
+            if ($str == "null"){
+                return $str;
+            }
             $str .= "(". static::getParams($methodInfo["params"], $start) . ")";
         }
         return $str;
@@ -163,5 +184,45 @@ class StringOper{
         }
         return strcmp($str1, $str2) <= 0 ? $str1. "_" .$str2 : $str2. "_" .$str1;
     }
-}
 
+    /**
+     * returns a string containing $str with additional $charToAdd where the result has 
+     * length $desiredLength
+     *
+     * @param string $str
+     * @param integer $desiredLength
+     * @param string $charToAdd
+     * @return string
+     */
+    public static function addChars(string $str, int $desiredLength, string $charToAdd = " ") : string{
+        $special = [GREEN.TICK.QUIT, RED.CROSS.QUIT];
+        $len = in_array($str, $special) ? 1 : strlen($str);
+        $i = intdiv($desiredLength - $len, 2);
+        return str_repeat(" ", $i) . $str . str_repeat(" ", $desiredLength - ($i + $len));
+    }
+
+    public static function printSeparator(array $lengths){
+        echo "+". implode("+", array_map(fn($length) => str_repeat("-", $length + 2), $lengths)) . "+" . PHP_EOL;
+    }
+
+    public static function removeComments(string $str) : string{
+        $x = "";
+        $str = str_split($str);
+        $result = "";
+        $inComment = false;
+        foreach ($str as $char){
+            if (substr($x, -2) == "/*" && !$inComment){
+                $inComment = true;
+                $result = substr($result, 0, -2);
+            }
+            if (substr($x, -2) == "*/" && $inComment){
+                $inComment = false;
+            }
+            if (!$inComment){
+                $result .= $char;
+            }
+            $x .= $char;
+        }
+        return $result;
+    }
+}

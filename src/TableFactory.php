@@ -6,7 +6,7 @@ namespace DatabaseDefinition\Src;
 include_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include AUTOLOADER;
 
-use DatabaseDefinition\Src\Error\BaseTableError;
+use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\TableParser as TP;
 use DatabaseDefinition\Src\Pivot\MorphPivotDefinition;
 use DatabaseDefinition\Src\Pivot\PivotDefinition;
@@ -14,7 +14,6 @@ use DatabaseDefinition\Src\Pivot\PivotTable;
 use DatabaseDefinition\Src\Table\Table;
 use DatabaseDefinition\Src\Table\TableDefinition;
 
-use Error;
 
 class TableFactory{
     private static function returnMorphOrPivot(array &$fileContents) : PivotTable{
@@ -31,20 +30,16 @@ class TableFactory{
             case TableType::Table:
                 try{
                     $fileContents = TP::getDefinitionParts(TableType::Table, $tableName);
-                } catch (Error){
-                    throw new Error("Table '$tableName' of type '{$type->value}' doesn't exist.");
+                } catch (CustomError $e){
+                    throw new CustomError("Table '$tableName' of type '{$type->value}' doesn't exist.");
                 }
                 return new TableDefinition($fileContents, $doRelations);
                 break;
             case TableType::Pivot:
                 try{
                     $fileContents = TP::getDefinitionParts(TableType::Pivot, $tableName);
-                } catch (Error $e){
-                    echo $e::class . PHP_EOL;
-                    if ($e::class === "DatabaseDefinition\\Src\\Error\\BaseTableError"){
-                        throw new BaseTableError($e->tableName);
-                    }
-                    throw new Error("Table '$tableName' of type '{$type->value}' doesn't exist.");
+                } catch (CustomError){
+                    throw new CustomError("Table '$tableName' of type '{$type->value}' doesn't exist.");
                 }
                 return static::returnMorphOrPivot($fileContents);
                 break;
@@ -53,11 +48,11 @@ class TableFactory{
                 try{
                     $fileContents = TP::getDefinitionParts(TableType::Table, $tableName);
                     $isTableDefinition = true;
-                } catch (Error){
+                } catch (CustomError){
                     try{
                         $fileContents = TP::getDefinitionParts(TableType::Pivot, $tableName);
-                    } catch (Error){
-                        throw new Error("Table '$tableName' doesn't exist.");
+                    } catch (CustomError){
+                        throw new CustomError("Table '$tableName' doesn't exist.");
                     }
                 }
                 if ($isTableDefinition){

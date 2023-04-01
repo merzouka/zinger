@@ -6,9 +6,9 @@ include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_S
 include AUTOLOADER;
 
 use DatabaseDefinition\Src\Error\BaseTableError;
+use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
 use DatabaseDefinition\Src\TableType;
-use Error;
 
 class TableParser{
 
@@ -94,10 +94,10 @@ class TableParser{
         static::$fileContents = [];
         $tablePath = static::getPath($type) . $tableName . TABLE_FILE_SUFFIX;
         if (!file_exists($tablePath)){
-            throw new Error("Table '$tableName' of type '{$type->value}' doesn't exist.");
+            throw new CustomError("Table '$tableName' of type '{$type->value}' doesn't exist.");
         }
         $file = fopen($tablePath, "r");
-        $fileContents = fread($file, filesize($tablePath));
+        $fileContents = SO::removeComments(fread($file, filesize($tablePath)));
         if (str_contains($fileContents, "[*BASE*]")){
             throw new BaseTableError($tableName);
         }

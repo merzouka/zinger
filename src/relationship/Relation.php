@@ -2,7 +2,7 @@
 
 namespace DatabaseDefinition\Src\Relationship;
 
-use DatabaseDefinition\Src\Helpers\DefinitionHelper;
+use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
 use DatabaseDefinition\Src\Helpers\TableParser;
 use DatabaseDefinition\Src\Pivot\Morph;
@@ -12,23 +12,27 @@ use DatabaseDefinition\Src\Pivot\PivotTable;
 use DatabaseDefinition\Src\Table\TableDefinition;
 use DatabaseDefinition\Src\TableFactory;
 use DatabaseDefinition\Src\TableType;
-use Error;
 
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include AUTOLOADER;
 
 class Relation
-{
-
+{   
+    #region properties
     public TableDefinition $owner;
     public TableDefinition $related;
     public PivotTable $pivot;
     public string $method;
     public array $parameters;
+    #endregion
+
+    #region constants
     public const METHODS_WITHOUT_RELATED = [
         "morphsOne", "morphsMany", "hasOneThroughManyMorphs", "hasManyThroughManyMorphs"
     ];
+    #endregion
 
+    #region constructors
     public function __construct(array $relationInfo, TableDefinition &$owner, bool $forceNew = false)
     {
         $this->method = $relationInfo["method"];
@@ -67,11 +71,13 @@ class Relation
                 $this->fillMorphAtt($relationInfo["params"], 0, $forceNew, true, true);
                 break;
             default:
-                throw new Error("Relationship method '{$this->method}' is not valid in table '{$this->owner->name}'.");
+                throw new CustomError("Relationship method '{$this->method}' is not valid in table '{$this->owner->name}'.");
                 break;
         }
     }
+    #endregion
 
+    #region property fillers
     /**
      * sets values for $pivot and $parameters attributes if method is a morph method
      *
@@ -152,7 +158,9 @@ class Relation
             $forceNew
         );
     }
+    #endregion
 
+    #region write methods
     /**
      * insert at $offset into $modelFileContents the defining function of the relationship
      *
@@ -217,14 +225,26 @@ class Relation
         return $includes;
     }
 
-    public function createPivot(){
+    public function createPivot(bool $verbose = false){
         // no pivots to create
         if (!isset($this->pivot)){
             return;
         }
         if (!TableParser::tableExists($this->pivot->name, TableType::Pivot)){
-            $this->pivot->write();
+            $this->pivot->write($verbose);
         }
     }
+    #endregion
 
+    #region display
+    public function display(){
+        echo SO::getMethod([
+            "method" => PURPLE . BOLD . $this->method . QUIT,
+            "params" => array_map(
+                fn($key, $value) => "$key:$value",
+                array_keys($this->parameters),
+                $this->parameters
+        )], false) . PHP_EOL;
+    }
+    #endregion
 }
