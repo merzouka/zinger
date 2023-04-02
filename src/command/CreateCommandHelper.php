@@ -17,18 +17,52 @@ use DatabaseDefinition\Src\TableType;
  * handles create commands
  */
 class CreateCommandHelper{
+    #region properties
     private static string $path;
+    #endregion
 
+    #region private methods
     private static function setPath(){
         if (isset($path)){
             return;
         }
-        $pathFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . "path.txt";
+        $pathFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . PATH_FILE_NAME;
         $file = fopen($pathFile, "r");
         static::$path = fgets($file) . DIRECTORY_SEPARATOR;
         fclose($file);
     }
 
+    /**
+     * creates tables $tables
+     *
+     * @param array $tables
+     * @param boolean $isBase
+     * @return void
+     */
+    private static function generalTable(array $tables, bool $isBase = false){
+        $formatFile = !$isBase ? "tableFormat.php" : "baseTableFormat.php";
+        $formatPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . "table" . DIRECTORY_SEPARATOR . $formatFile;
+        var_dump($tables);
+        foreach ($tables as $tableName){
+            var_dump($tableName);
+            if (TableParser::tableExists($tableName, TableType::Table)){
+                (new ConsoleOutputFormatter(OutputType::Error, "Table '$tableName' already exists."))->out();
+                echo PHP_EOL;
+                return;
+            }
+            include $formatPath;
+            $tablePath = TableParser::getPath(TableType::Table) . $tableName . TABLE_FILE_SUFFIX;
+            $file = fopen($tablePath, "w");
+            fwrite($file, $str);
+            fclose($file);
+            (new ConsoleOutputFormatter(OutputType::Created, ($isBase ? " base " : "")."table '$tableName'."))->out();
+            echo PHP_EOL;
+        }
+        
+    }
+    #endregion
+
+    #region public methods
     /**
      * creates pivots for $tables
      *
@@ -54,18 +88,16 @@ class CreateCommandHelper{
             try{
                 (TableFactory::createTable($table, TableType::Table, true))->createPivots($verbose);
             } catch (CustomError|BaseTableError $e){
-                if ($e::class === "DatabaseDefinition\\Src\\Error\\BaseTableError" && $tablesFromUser){
-                    (new ConsoleOutputFormatter(OutputType::Error, $e->getMessage()))->out();
-                    $error = true;
-                    continue;
-                } else if (!$tablesFromUser){
-                    continue;
-                }
                 $error = true;
                 (new ConsoleOutputFormatter(OutputType::Error, $e->getMessage()))->out();
+            } catch (BaseTableError $e){
+                if ($tablesFromUser){
+                    (new ConsoleOutputFormatter(OutputType::Error, $e->getMessage()))->out();
+                    $error = true;
+                }
             }
         }
-        if ($error && $verbose){
+        if ($error){
             echo PHP_EOL;
         }
     }
@@ -74,27 +106,10 @@ class CreateCommandHelper{
      * creates tables $tables
      *
      * @param array $tables
-     * @param boolean $isBase
      * @return void
      */
-    public static function table(array $tables, bool $isBase = false){
-        $formatFile = !$isBase ? "tableFormat.php" : "baseTableFormat.php";
-        $formatPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . "table" . DIRECTORY_SEPARATOR . $formatFile;
-        foreach ($tables as $tableName){
-            if (TableParser::tableExists($tableName, TableType::Table)){
-                (new ConsoleOutputFormatter(OutputType::Error, "Table '$tableName' already exists."))->out();
-                echo PHP_EOL;
-                return;
-            }
-            include_once $formatPath;
-            $tablePath = TableParser::getPath(TableType::Table) . $tableName . TABLE_FILE_SUFFIX;
-            $file = fopen($tablePath, "w");
-            fwrite($file, $str);
-            fclose($file);
-            (new ConsoleOutputFormatter(OutputType::Created, ($isBase ? " base " : "")."table '$tableName'."))->out();
-            echo PHP_EOL;
-        }
-        
+    public static function table(array $tables){
+        static::generalTable($tables);
     }
 
     /**
@@ -104,9 +119,8 @@ class CreateCommandHelper{
      * @return void
      */
     public static function base(array $tables){
-        static::table($tables, true);
+        static::generalTable($tables, true);
     }
+    #endregion
 
 }
-
-CreateCommandHelper::table(["hops", "lops"]);

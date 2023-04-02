@@ -1,10 +1,10 @@
-NAME: products
-MODEL:Product
+NAME: products 
+MODEL: Product
 RECORDS: 10
-RELATIONS: hasMany("invoices", "invoices", "product_id"),
+RELATIONS: hasMany("invoices", "invoices"),
 hasOneThroughMorph("shops", "purchasable", "shop")
 HAS_TIMESTAMPS: true
 COLUMNS:
-id, productId, false, null, id;
-name, productName, true, company, string;
-price, price, true, numberBetween(100, 1000), integer;
+product_id, null, false, null, id;
+name, name, true, name, string;
+price, price, true, numberBetween(100, 2000), integer;

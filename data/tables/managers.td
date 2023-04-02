@@ -1,7 +1,8 @@
-NAME: managers
+NAME: managers 
+MODEL: Manager
 RECORDS: 10
 RELATIONS: hasManyThroughManyMorphs("super", "seller")
+HAS_TIMESTAMPS: false 
 COLUMNS:
-manager_id, id, false, null, id;
-name, manger_name, true, name, string;
-gender, gender, true, randomElement(["M", "F"]), string(1);
+manager_id, null, false, null, id;
+[*person, table*]

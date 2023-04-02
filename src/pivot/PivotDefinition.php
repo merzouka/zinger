@@ -22,7 +22,7 @@ class PivotDefinition extends PivotTable
     #region properties
     public array $primaryKeys;
     #endregion
-    
+
     #region constructors
     private function __construct(?array &$fileContents = null, bool $doRelations = false)
     {
@@ -113,6 +113,11 @@ class PivotDefinition extends PivotTable
     #endregion
 
     #region general methods
+    public function __toString()
+    {
+        $this->childPrimaryPropertyName = "primaryKeys";
+        return parent::__toString();
+    }
 
     public function defineTable(Blueprint &$table)
     {
@@ -164,18 +169,6 @@ class PivotDefinition extends PivotTable
             $result = array_merge($result, [$x]);
         }
         DB::table($this->name)->insert($result);
-    }
-
-    /**
-     * return file contents
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        $foreignKeyText = implode(", ", array_map(fn ($foreignKey) => (string)$foreignKey, $this->foreignKeys));
-        $primaryKeyText = implode(PHP_EOL, array_map(fn ($primaryKey) => (string)$primaryKey, $this->primaryKeys));
-        return parent::getString($primaryKeyText, $foreignKeyText);
     }
 
     public function getForeignOfTable(string $tableName): string

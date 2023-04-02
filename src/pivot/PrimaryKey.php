@@ -33,6 +33,7 @@ class PrimaryKey implements AddableInterface{
     public static function toBeWritten(string $name, array $columnInfo) : PrimaryKey{
         $obj = new PrimaryKey();
         $obj->name = $name;
+        $obj->jsonName = $columnInfo["json_name"] ?? "";
         $obj->type = $columnInfo["type"];
         $obj->type["method"] = SO::translateType($obj->type["method"]);
         $obj->properties = $columnInfo["properties"];
@@ -48,7 +49,7 @@ class PrimaryKey implements AddableInterface{
     public static function toBeUsed(array $info) : PrimaryKey{
         $obj = new PrimaryKey();
         $obj->name = $info["name"];
-        $obj->jsonName = isset($info["json_name"]) ? $info["json_name"] : null;
+        $obj->jsonName = $info["json_name"] ?? "";
         $obj->type = $info["type"];
         $obj->properties = $info["properties"];
         return $obj;
@@ -98,15 +99,16 @@ class PrimaryKey implements AddableInterface{
     #region display
 
     public function prepareRowColumns() : array{
+        $special = [GREEN.TICK.QUIT, RED.CROSS.QUIT];
         $this->rowColumns = [
             $this->name,
             $this->jsonName,
-            CROSS,
+            RED . CROSS . QUIT,
             "null",
             SO::getMethod($this->type),
             implode(", ", $this->properties)
         ];
-        return array_map(fn($str) => ($str == CROSS) ? 1 : strlen($str), $this->rowColumns);
+        return array_map(fn($str) => in_array($str, $special) ? 1 : strlen($str), $this->rowColumns);
     }
 
     public function display(array $lengths){

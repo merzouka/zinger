@@ -11,7 +11,6 @@ use DatabaseDefinition\Src\Helpers\TableParser as TP;
 use DatabaseDefinition\Src\Pivot\MorphPivotDefinition;
 use DatabaseDefinition\Src\Pivot\PivotDefinition;
 use DatabaseDefinition\Src\Pivot\PivotTable;
-use DatabaseDefinition\Src\Table\Table;
 use DatabaseDefinition\Src\Table\TableDefinition;
 
 
@@ -25,7 +24,11 @@ class TableFactory{
         return MorphPivotDefinition::toBeUsed($fileContents);
     }
 
-    public static function createTable(string $tableName, ?TableType $type = null, bool $doRelations = false) : Table{
+    public static function createTable(
+        string $tableName,
+        ?TableType $type = null,
+        bool $doRelations = false,
+    ) : MorphPivotDefinition|PivotDefinition|TableDefinition{
         switch($type){
             case TableType::Table:
                 try{
@@ -42,6 +45,14 @@ class TableFactory{
                     throw new CustomError("Table '$tableName' of type '{$type->value}' doesn't exist.");
                 }
                 return static::returnMorphOrPivot($fileContents);
+                break;
+            case TableType::Base:
+                try{
+                    $fileContents = TP::getDefinitionParts(TableType::Base, $tableName);
+                } catch (CustomError){
+                    throw new CustomError("Table '$tableName' of type '{$type->value}' doesn't exist.");
+                }
+                return new TableDefinition($fileContents, $doRelations);
                 break;
             default:
                 $isTableDefinition = false;
@@ -63,4 +74,3 @@ class TableFactory{
         }
     }
 }
-

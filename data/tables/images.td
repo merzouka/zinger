@@ -1,9 +1,9 @@
 NAME: images
-MODEL:Image
+MODEL: Image
 RECORDS: 10
-RELATIONS: morphsOne("image", "imageable", "imageable_image")
-HAS_TIMESTAMPS: false
+RELATIONS: morphsOne("image", "imageable_image", "image_imageable", "imageable")
+HAS_TIMESTAMPS: true
 COLUMNS:
-image_id, id, false, null, id;
-added_at, addedAt, true, date, timestamp, nullable;
-path, path, true, text, string, nullable;
+image_id, null, false, null, id;
+resolution, resolution, true, null, string, nullable;
+name, name, true, name, string, nullable;

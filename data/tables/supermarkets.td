@@ -1,10 +1,10 @@
-NAME: super_markets 
+NAME: supermarkets 
+MODEL: Supermarkets
 RECORDS: 10
-RELATIONS: hasManyThroughManyMorphs("seller", "person"),
+RELATIONS: hasManyThroughManyMorphs("seller", "person", "person_seller", "people", 1),
 hasOneThroughManyMorphs("seller", "super")
-HAS_TIMESTAMPS: true
 COLUMNS:
-super_market_id, supermarketId, false, null, id;
+id, id, false, null, id;
 name, name, true, company, string;
-slogan, slogan, false, text, string, nullable;
-address, address, true, address, string, nullable;
+area, area, true, numberBetween(100, 10000), integer, unsigned;
+address, address, true, address, string;

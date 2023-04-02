@@ -94,6 +94,7 @@ class Table implements TableInterface{
         $commandOutput = [];
         chdir(ROOT_DIR);
         foreach ($this->commands as $command){
+            echo "hello". PHP_EOL;
             if ($verbose){
                 exec($command, $commandOutput);
                 foreach ($this->parseOutput($commandOutput) as $output){
@@ -218,6 +219,9 @@ class Table implements TableInterface{
      */
     protected function fillLengths(string $attName, string $prepareMethod, array $headerArray){
         $this->lengths = array_map(fn($str) => strlen($str), $headerArray);
+        if (!isset($this->{$attName})){
+            return;
+        }
         foreach ($this->{$attName} as $element){
             $this->lengths = array_map(
                 fn($v1, $v2) => max($v1, $v2),
@@ -332,7 +336,6 @@ class Table implements TableInterface{
         if (isset($this->commands) && $this->commands !== []) {$this->displayCommands();}
         if (isset($this->foreignKeys)) {$this->displayForeign();}
         if (isset($this->relations) && $this->relations !== []) {$this->displayRelations();}
-        if (isset($this->columns)) {$this->displayColumns(true);}
     }
     #endregion
 

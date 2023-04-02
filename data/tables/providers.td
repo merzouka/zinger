@@ -1,8 +1,9 @@
-NAME: providers 
+EXCLUDE: f, resource
+NAME: customers
+MODEL: Provider
 RECORDS: 10
 RELATIONS: hasManyThroughManyMorphs("person", "seller")
-HAS_TIMESTAMPS: true 
+HAS_TIMESTAMPS: false 
 COLUMNS:
-provider_id, id, false, null, id;
-name, name, true, name, string;
-age, age, true, numberBetween(10, 100), tinyInteger, nullable;
+provider_id, null, false, null, id;
+[*person, table*]

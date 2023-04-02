@@ -147,6 +147,9 @@ class DefinitionHelper
 
     public static function getColumnsInfo(string $str, bool $inChild = false): array
     {
+        if ($str === ""){
+            return [];
+        }
         $str = explode(";", $str);
         $columns = [];
         foreach ($str as $column) {
@@ -183,6 +186,9 @@ class DefinitionHelper
      */
     public static function getRelationMethodsInfo(string $str): array
     {
+        if ($str === ""){
+            return [];
+        }
         $result = [];
         foreach (SO::splitIfNotBrackets(",", SO::removeWhiteSpaces($str)) as $relationMethod) {
             $methodInfo = static::getMethodInfo($relationMethod);
@@ -214,6 +220,9 @@ class DefinitionHelper
      */
     private static function getForeignKeyInfo(string $str): array
     {
+        if ($str == ""){
+            return [];
+        }
         $str = substr($str, 1, -1); // remove parentheses
         $relationshipInfo = explode(",", $str);
         $foreignKeyMethods = static::getOnUpdateOnDelete(array_slice($relationshipInfo, 3));
@@ -253,6 +262,9 @@ class DefinitionHelper
      */
     public static function getCommandsInfo(string|null $excludes, string $modelName, string $tableName = ""): array
     {
+        if ($modelName === ""){
+            return [];
+        }
         $commands = [];
         $modelRelatedOptions = ["c", "f", "m", "s"];
         $isApi = false;
@@ -306,7 +318,7 @@ class DefinitionHelper
     {
         $modelName = (isset($fileContents["MODEL"])) ? SO::removeWhiteSpaces($fileContents["MODEL"]) : SO::getModelName(SO::removeWhiteSpaces($fileContents["NAME"]));
         return match ($part) {
-            "EXCLUDE" => (isset($fileContents["EXCLUDE"])) ? static::getCommandsInfo($fileContents["EXCLUDE"], $modelName, $fileContents["NAME"]) : [],
+            "EXCLUDE" => static::getCommandsInfo($fileContents["EXCLUDE"] ?? null, $modelName, $fileContents["NAME"]),
             "NAME" => SO::removeWhiteSpaces($fileContents["NAME"]),
             "MODEL" => (isset($fileContents["MODEL"])) ? SO::removeWhiteSpaces($fileContents["MODEL"]) : $modelName,
             "HAS_TIMESTAMPS" => (isset($fileContents["HAS_TIMESTAMPS"])) ? (strtolower(SO::removeWhiteSpaces($fileContents["HAS_TIMESTAMPS"])) == "false" ? false : true) : true,

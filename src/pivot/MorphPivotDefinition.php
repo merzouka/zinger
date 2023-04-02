@@ -57,7 +57,8 @@ class MorphPivotDefinition extends PivotTable
     ): MorphPivotDefinition {
         $tableName = $tableName === "" ? SO::getPivotName($singularPrefix, $morphedPrefix) : $tableName;
         if (TableParser::tableExists($tableName, TableType::Pivot) && !$forceNew) {
-            return TableFactory::createTable($tableName, TableType::Pivot);
+            return (TableFactory::createTable($tableName, TableType::Pivot))
+            ->updateLength($singularPrefix. "_type", $singularTypeLength);
         }
         $obj = new MorphPivotDefinition();
         $obj->name = $tableName;
@@ -147,14 +148,29 @@ class MorphPivotDefinition extends PivotTable
     {
         return [array_keys($array)[0], array_values($array)[0]];
     }
+
+    /**
+     * resets the length of $typeColumn type to $length in a previously created table
+     *
+     * @param string $typeColumn
+     * @param integer $length
+     * @return MorphPivotDefinition
+     */
+    private function updateLength(string $typeColumn, int $length) : MorphPivotDefinition{
+        foreach ($this->primaryColumns as &$primary){
+            if ($primary->name === $typeColumn){
+                $primary->type["params"][1] = $length;
+            }
+        }
+        return $this;
+    }
     #endregion
 
     #region general methods
     public function __toString()
     {
-        $columnText = implode(PHP_EOL, array_map(fn ($primaryColumn) => (string)$primaryColumn, $this->primaryColumns));
-        $foreignKeyText = implode(", ", array_map(fn ($foreignKey) => (string)$foreignKey, $this->foreignKeys));
-        return parent::getString($columnText, $foreignKeyText);
+        $this->childPrimaryPropertyName = "primaryColumns";
+        return parent::__toString();
     }
 
     /**

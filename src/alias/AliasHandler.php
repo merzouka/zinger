@@ -136,7 +136,7 @@ class AliasHandler{
         if (isset(static::$aliasesPath)){
             return static::$aliasesPath;
         }
-        $pathFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . "path.txt";
+        $pathFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . PATH_FILE_NAME;
         $file = fopen($pathFile, "r");
         $dataPath = fgets($file);
         fclose($file);
@@ -146,7 +146,7 @@ class AliasHandler{
 
     
 
-    public static function getArrayByNameOrGENERAL(string $aliasName = "") : array|null{
+    public static function getArrayByNameOrGENERAL(string $aliasName = "", bool $getGeneral = true) : array|null{
         if (!isset(static::$aliases)){
             static::loadAliases();
         }
@@ -158,10 +158,13 @@ class AliasHandler{
                 return static::$aliases[$key];
             }
         }
+        if (!$getGeneral){
+            throw new CustomError("Alias '". $aliasName ."' Not Found.");
+        }
         if (isset(static::$aliases["GENERAL"])){
             return static::$aliases["GENERAL"];
         }
-        throw new CustomError("Alias '". $aliasName ."' Not Found");
+        throw new CustomError("Alias '". $aliasName ."' Not Found.");
 
     }
     #endregion
@@ -275,5 +278,10 @@ class AliasHandler{
     }
     #endregion
 
+    #region display
+    public static function display(string $aliasName){
+        echo "$aliasName = " . static::formatArrayToString(static::getArrayByNameOrGENERAL($aliasName)) . PHP_EOL;
+    }
+    #endregion
 }
 

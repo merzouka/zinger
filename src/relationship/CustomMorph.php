@@ -9,6 +9,8 @@ use DatabaseDefinition\Src\Alias\AliasHandler as AH;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Relationship\Morph;
+use Relationship\MorphCollection;
+use Relationship\MorphModel;
 
 /**
  * Uses database definition structure to pass parameters to Morph functions
@@ -21,7 +23,7 @@ class CustomMorph
         string $pivotTableName,
         string $ownerPrefix,
         string $relatedPrefix
-    ): Model {
+    ): MorphModel {
         return Morph::morphsOne(
             $owner,
             $pivotTableName,
@@ -37,7 +39,7 @@ class CustomMorph
         string $pivotTableName,
         string $ownerPrefix,
         string $relatedPrefix
-    ): Model {
+    ): MorphModel {
         return Morph::hasOneThroughMorph(
             $owner,
             $related,
@@ -53,7 +55,7 @@ class CustomMorph
         string $pivotTableName,
         string $ownerPrefix,
         string $relatedPrefix
-    ): Collection {
+    ): MorphCollection {
         return Morph::morphsMany(
             $owner,
             $pivotTableName,
@@ -69,7 +71,7 @@ class CustomMorph
         string $pivotTableName,
         string $ownerPrefix,
         string $relatedPrefix
-    ) : Collection{
+    ) : MorphCollection{
         return Morph::hasManyThroughMorph(
             $owner,
             $related,
@@ -85,7 +87,7 @@ class CustomMorph
         string $pivotTableName,
         string $ownerPrefix,
         string $relatedPrefix
-    ) : Model{
+    ) : MorphModel{
         $relatedPrefixArray = AH::getPrefixAliases($relatedPrefix, $pivotTableName);
         return Morph::hasOneThroughManyMorphs(
             $owner,
@@ -104,7 +106,7 @@ class CustomMorph
         string $pivotTableName,
         string $ownerPrefix,
         string $relatedPrefix
-    ) : Collection{
+    ) : MorphCollection{
         $relatedPrefixAliases = AH::getPrefixAliases($relatedPrefix, $pivotTableName);
         return Morph::hasManyThroughManyMorphs(
             $owner,

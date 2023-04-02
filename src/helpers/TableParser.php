@@ -27,7 +27,10 @@ class TableParser{
     #region methods
 
     public static function getPath(TableType $type) : string{
-        $pathFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . "path.txt";
+        if ($type == TableType::Base){
+            $type = TableType::Table;
+        }
+        $pathFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . PATH_FILE_NAME;
         $file = fopen($pathFile, "r");
         $dataPath = fgets($file);
         fclose($file);
@@ -98,11 +101,17 @@ class TableParser{
         }
         $file = fopen($tablePath, "r");
         $fileContents = SO::removeComments(fread($file, filesize($tablePath)));
-        if (str_contains($fileContents, "[*BASE*]")){
+        // if table shouldn't be base but is
+        if (str_contains($fileContents, "[*BASE*]") && $type !== TableType::Base){
             throw new BaseTableError($tableName);
         }
+        if ($type == TableType::Base){
+            $fileContents = str_replace("[*BASE*]", "", $fileContents);
+        }
+        $fileContents = SO::removeWhiteSpaces($fileContents);
         static::getPartsText($fileContents);
         fclose($file);
+        var_dump(static::getIndexedParts());
         return static::getIndexedParts();
     }
     #endregion

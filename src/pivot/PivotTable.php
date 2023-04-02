@@ -21,10 +21,10 @@ use Illuminate\Support\Facades\DB;
 class PivotTable extends Table{
 
     #region properties
-    private string $childPrimaryPropertyName;
+    protected string $childPrimaryPropertyName;
     public array $tableSampleIds;
     #endregion
-    
+
     #region constructors
     public function __construct(?array &$fileContents, string $primaryPropertyName, bool $doRelations = false)
     {
@@ -127,6 +127,14 @@ COLUMNS:
     public function query() : Builder{
         return DB::table($this->name);
     }
+
+    public function __toString()
+    {
+        $columns = array_merge($this->{$this->childPrimaryPropertyName}, $this->columns ?? []);
+        $primaryKeyText = implode(PHP_EOL, array_map(fn ($column) => (string)$column, $columns));
+        $foreignKeyText = implode(", ", array_map(fn ($foreignKey) => (string)$foreignKey, $this->foreignKeys ?? []));
+        return $this->getString($primaryKeyText, $foreignKeyText);
+    }
     
     /**
      * create the pivot file
@@ -135,7 +143,7 @@ COLUMNS:
      */
     public function write(bool $verbose = false){
         if (TableParser::tableExists($this->name, TableType::Pivot)){
-            return;
+            $verbose = false;
         }
         $filePath = TableParser::getPath(TableType::Pivot). $this->name .TABLE_FILE_SUFFIX;
         $file = fopen($filePath, "w");
@@ -176,12 +184,22 @@ COLUMNS:
 
     public function displayColumns(bool $updateLengths = false)
     {
+        echo BOLD . "COLUMNS:" . QUIT . PHP_EOL;
         $this->fillLengths("columns", "prepareRowColumns", parent::TABLE_COLUMNS);
         $this->printHeader(parent::TABLE_COLUMNS);
         foreach ($this->{$this->childPrimaryPropertyName} as $primary){
             $primary->display($this->lengths);
         }
-        parent::displayColumns();
+        if (isset($this->columns)){
+            parent::displayColumns();
+        }
+        SO::printSeparator($this->lengths);
+    }
+
+    public function display()
+    {
+        parent::display();
+        $this->displayColumns();
     }
     #endregion
 

@@ -180,7 +180,7 @@ class Relation
         switch ($this->method) {
             case "hasOne":
                 $param2ValueProvider = "owner";
-                goto hasMany; // line 177
+                goto hasMany; // line 187
             case "belongsTo":
                 $param2ValueProvider = "related";
             case "hasMany":
@@ -206,7 +206,7 @@ class Relation
             case "hasOneThroughManyMorphs":
             case "hasManyThroughManyMorphs":
                 $morphTemplateFile = "morphRelationTemplate.php";
-                goto skipRelated; // line 204
+                goto skipRelated; // line 214
             case "hasOneThroughMorph":
             case "hasManyThroughMorph":
                 $related = $this->related->modelName;
@@ -230,9 +230,7 @@ class Relation
         if (!isset($this->pivot)){
             return;
         }
-        if (!TableParser::tableExists($this->pivot->name, TableType::Pivot)){
-            $this->pivot->write($verbose);
-        }
+        $this->pivot->write($verbose);
     }
     #endregion
 

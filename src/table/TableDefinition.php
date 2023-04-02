@@ -10,7 +10,7 @@ use DatabaseDefinition\Src\Helpers\DefinitionHelper as DH;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
 use DatabaseDefinition\Src\Table\Column;
 use DatabaseDefinition\Src\TableFactory;
-
+use DatabaseDefinition\Src\TableType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -165,6 +165,7 @@ class TableDefinition extends Table
             $relationStart = DH::arrayFindFromOffset("START_RELATIONSHIPS", $modelFileContents, $attEnd + 1);
             $relationEnd = DH::arrayFindFromOffset("END_RELATIONSHIPS", $modelFileContents, $relationStart + 1);
         } catch (CustomError $e){
+            // the need part doesn't exist in model ...
             throw new CustomError($e->getMessage() . " in model '{$this->modelName}'.");
         }
 
@@ -193,8 +194,12 @@ class TableDefinition extends Table
     {
         parent::displayInfo(true);
     }
+
+    public function display()
+    {
+        parent::display();
+        if (isset($this->columns)) {$this->displayColumns(true);}
+    }
     #endregion
 
 }
-
-TableFactory::createTable("invoices", doRelations:true)->display();
