@@ -12,6 +12,9 @@ use DatabaseDefinition\Src\Interfaces\TableInterface;
 use DatabaseDefinition\Src\Relationship\Relation;
 use Illuminate\Database\Schema\Blueprint;
 
+/**
+ * parent class of all tables
+ */
 class Table implements TableInterface{
 
     #region attributes
@@ -48,12 +51,13 @@ class Table implements TableInterface{
         $this->hasTimestamps = DH::getInfoByPart("HAS_TIMESTAMPS", $fileContents);
         $this->commands = DH::getInfoByPart("EXCLUDE", $fileContents);
         // adding foreign keys
+        $this->foreignKeys = [];
         $foreignKeys = DH::getInfoByPart("FOREIGN_KEYS", $fileContents);
         if ($foreignKeys !== null){
             foreach ($foreignKeys as $key){
                 $this->foreignKeys[] = ForeignKey::fromArray($key);
             }
-        } else $this->foreignKeys = null;
+        } else $this->foreignKeys = [];
         $this->relations = [];
         if ($doRelations){
             foreach (DH::getInfoByPart("RELATIONS", $fileContents) as $relationInfo){
@@ -94,7 +98,6 @@ class Table implements TableInterface{
         $commandOutput = [];
         chdir(ROOT_DIR);
         foreach ($this->commands as $command){
-            echo "hello". PHP_EOL;
             if ($verbose){
                 exec($command, $commandOutput);
                 foreach ($this->parseOutput($commandOutput) as $output){
@@ -188,6 +191,7 @@ class Table implements TableInterface{
                 if ($value === null){
                     continue;
                 }
+                // to later choose random element between $value and null
                 $value = [$value];
                 if (in_array("nullable", $column->columnInfo["properties"])){
                     $value[] = null;
@@ -195,7 +199,7 @@ class Table implements TableInterface{
                 $result[$column->name] = $value[array_rand($value)];
             }
         }
-        return $result;
+        return array_merge($result, $arr);
     }
 
     /**
@@ -213,8 +217,12 @@ class Table implements TableInterface{
 
     #region display
     /**
-     * fills length property
+     * fills the length property
      *
+     * @param string $attName the name of the att that contains the desired rows
+     * @param string $prepareMethod the name of the to prepare the row values to be later displayed
+     * @param array $headerArray array containing the values of the header columns
+     * @param boolean $hasPrimary
      * @return void
      */
     protected function fillLengths(string $attName, string $prepareMethod, array $headerArray){
@@ -334,7 +342,7 @@ class Table implements TableInterface{
     public function display(){
         $this->displayInfo();
         if (isset($this->commands) && $this->commands !== []) {$this->displayCommands();}
-        if (isset($this->foreignKeys)) {$this->displayForeign();}
+        if (isset($this->foreignKeys) && $this->foreignKeys !== []) {$this->displayForeign();}
         if (isset($this->relations) && $this->relations !== []) {$this->displayRelations();}
     }
     #endregion

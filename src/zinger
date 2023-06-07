@@ -1,0 +1,7 @@
+<?php
+
+include __DIR__ . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
+include AUTOLOADER;
+
+use DatabaseDefinition\Src\Command\Command;
+Command::run(array_slice($argv, 1));

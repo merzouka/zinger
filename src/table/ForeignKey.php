@@ -8,13 +8,20 @@ use Error;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\ForeignKeyDefinition;
 
+/**
+ * used for writing and using foreign keys
+ */
 class ForeignKey{
 
+    #region properties
     public array $keyInfo;
+    // related to display
     private array $keyColumns;
-    
+    #endregion
 
+    #region constructor
     private function  __construct(){}
+    #endregion
 
     #region instantiation
     private static function addToArrayIfNotEmpty(array &$arr, string $key, string $val){
@@ -34,6 +41,7 @@ class ForeignKey{
         $obj->keyInfo = $keyInfo;
         return $obj;
     }
+    
     /**
      * instantiate a new Foreign key object from parameters
      *
@@ -103,6 +111,12 @@ class ForeignKey{
     }
     #endregion
 
+    #region general
+    /**
+     * used when creating pivot table
+     *
+     * @return string
+     */
     public function __toString()
     {
         $str = "(";
@@ -113,7 +127,9 @@ class ForeignKey{
         return $str . ")";
         
     }
+    #endregion
 
+    #region display
     public function prepareKeyColumns(){
         $this->keyColumns = [
             $this->keyInfo["foreign"],
@@ -133,5 +149,6 @@ class ForeignKey{
         ));
         echo "| $contents |" . PHP_EOL;
     }
+    #endregion
 
 }

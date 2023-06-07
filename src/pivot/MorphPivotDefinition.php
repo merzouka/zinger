@@ -33,6 +33,36 @@ class MorphPivotDefinition extends PivotTable
     }
 
     /**
+     * a helpers used to add a id column to the object using $prefix 
+     *
+     * @param string $prefix
+     * @return void
+     */
+    private function addIdPrimary(string $prefix){
+        $this->primaryColumns[] = (PrimaryKey::toBeWritten($prefix . "_id", [
+            "json_name" => "null",
+            "type" => ["method" => "bigInteger", "params" => [$prefix . "_id"]],
+            "properties" => ["unsigned"]
+        ]));
+    }
+
+    /**
+     * a helpers used to add a type column to the object using $prefix and set its string length 
+     * to $length.
+     *
+     * @param string $prefix
+     * @param integer $length
+     * @return void
+     */
+    private function addTypePrimary(string $prefix, int $length){
+        $this->primaryColumns[] = (PrimaryKey::toBeWritten($prefix . "_type", [
+            "json_name" => "null",
+            "type" => ["method" => "string", "params" => [$prefix . "_type", $length]],
+            "properties" => []
+        ]));
+    }
+
+    /**
      * instantiates a new object to be written or returns table object if it exists
      *
      * @param Morph $type the type of table used to tell if the table has foreign keys or not
@@ -56,16 +86,23 @@ class MorphPivotDefinition extends PivotTable
         bool $forceNew = false
     ): MorphPivotDefinition {
         $tableName = $tableName === "" ? SO::getPivotName($singularPrefix, $morphedPrefix) : $tableName;
+        // this conditional statement is used to set the column length for singularTable if
+        // the pivot table has already been set
         if (TableParser::tableExists($tableName, TableType::Pivot) && !$forceNew) {
             return (TableFactory::createTable($tableName, TableType::Pivot))
             ->updateLength($singularPrefix. "_type", $singularTypeLength);
         }
+
         $obj = new MorphPivotDefinition();
         $obj->name = $tableName;
         // one morph and table name provided
         if ($type == Morph::One && $singularTableName !== "") {
             $primaryColumn = parent::getPrimaryColumn(TableFactory::createTable($singularTableName, TableType::Table));
-            $obj->primaryColumns[] = PrimaryKey::toBeWritten($singularPrefix . "_id", $primaryColumn->columnInfo);
+            $p = PrimaryKey::toBeWritten($singularPrefix . "_id", $primaryColumn->columnInfo);
+            if (!in_array("unsigned", $p->properties)){
+                $p->properties[] = "unsigned";
+            }
+            $obj->primaryColumns[] = $p;
             // add foreign key to singular table
             $obj->foreignKeys[] = ForeignKey::fromParams($singularPrefix . "_id", $primaryColumn->name, $singularTableName, "cascade", "cascade");
         }
@@ -73,31 +110,15 @@ class MorphPivotDefinition extends PivotTable
         else {
             // no foreign keys to be added
             $obj->foreignKeys = [];
-            $obj->primaryColumns[] = (PrimaryKey::toBeWritten($singularPrefix . "_id", [
-                "json_name" => "null",
-                "type" => ["method" => "bigInteger", "params" => [$singularPrefix . "_id"]],
-                "properties" => ["unsigned"]
-            ]));
+            $obj->addIdPrimary($singularPrefix);
             // many morph => both have type and id columns
             if ($type == Morph::Many) {
-                $obj->primaryColumns[] = (PrimaryKey::toBeWritten($singularPrefix . "_type", [
-                    "json_name" => "null",
-                    "type" => ["method" => "string", "params" => [$singularPrefix . "_type", $singularTypeLength]],
-                    "properties" => []
-                ]));
+                $obj->addTypePrimary($singularPrefix, $singularTypeLength);
             }
         }
         // adding identifying columns for related tables
-        $obj->primaryColumns[] = (PrimaryKey::toBeWritten($morphedPrefix . "_id", [
-            "json_name" => "null",
-            "type" => ["method" => "bigInteger", "params" => [$morphedPrefix . "_id"]],
-            "properties" => ["unsigned"]
-        ]));
-        $obj->primaryColumns[] = (PrimaryKey::toBeWritten($morphedPrefix . "_type", [
-            "json_name" => "null",
-            "type" => ["method" => "string", "params" => [$morphedPrefix . "_type", $morphedTypeLength]],
-            "properties" => []
-        ]));
+        $obj->addIdPrimary($morphedPrefix);
+        $obj->addTypePrimary($morphedPrefix, $morphedTypeLength);
         return $obj;
     }
 
@@ -199,7 +220,8 @@ class MorphPivotDefinition extends PivotTable
     }
 
     /**
-     * returns them an an array of [type => id] where type is the alias of the table
+     * returns an array of [type => id] where type is the alias of the table and id is a random
+     * id form table
      *
      * @param string $tableName 
      * @param string $tableAlias
@@ -229,8 +251,8 @@ class MorphPivotDefinition extends PivotTable
             $array = static::getKeyValue($this->tableSampleIds[$prefix][array_rand($this->tableSampleIds[$prefix])]);
             $result[$primary->name] = $type == "id" ? $array[1] : $array[0];
         }
-        $result = array_merge($result, parent::getFactoryArray($arr));
-        return $result;
+
+        return array_merge($result, parent::getFactoryArray($arr));
     }
 
     public function seed(int $number = 0, bool $rehydrate = false)

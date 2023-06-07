@@ -2,11 +2,17 @@
 
 namespace DatabaseDefinition\Src\Helpers;
 
+include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
+include \AUTOLOADER;
+
+use DatabaseDefinition\Src\Error\SyntaxError;
+
 /**
- * a class responsible for multiple string munipulations operations
+ * a class responsible for multiple string manipulations operations
  */
 class StringOper{
 
+    #region constants
     public const PLURAL_PATTERNS = [
         "ies", "s"
     ];
@@ -14,13 +20,40 @@ class StringOper{
     public const WHITE_SPACE = [
         " ", PHP_EOL, "\t", "\n"
     ];
+    #endregion
 
     public static function last(array $array) : mixed{
         return $array[count($array) - 1];
     }
 
     public static function removeWhiteSpaces(string $str) : string{
-        return implode("", array_values(array_filter(str_split($str), fn($char) => !in_array($char, static::WHITE_SPACE))));
+        $str = str_split($str);
+        $nbSingleQuote = 0;
+        $nbDoubleQuote = 0;
+        $result = "";
+        foreach ($str as $char){
+            if ($char === "'"){
+                $nbSingleQuote += $nbSingleQuote === 0 ? 1 : -1;
+                $result .= $char;
+            } else if ($char === '"'){
+                $nbDoubleQuote += $nbDoubleQuote === 0 ? 1 : -1;
+                $result .= $char;
+            } else if (in_array($char, static::WHITE_SPACE) && ($nbSingleQuote !== 0 || $nbDoubleQuote !== 0)){
+                $result .= $char;
+            } else if (in_array($char, static::WHITE_SPACE)){
+                continue;
+            } else {
+                $result .= $char;
+            }
+        }
+        if ($nbDoubleQuote !== 0){
+            throw new SyntaxError('Missing closing tag of "');
+        }
+        if ($nbSingleQuote !== 0){
+            throw new SyntaxError("Missing closing tag of '");
+        }
+        return $result;
+        //return implode("", array_values(array_filter(str_split($str), fn($char) => !in_array($char, static::WHITE_SPACE))));
     }
 
     /**transforms a table name to a model name following conventions*/

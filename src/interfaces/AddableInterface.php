@@ -15,14 +15,14 @@ interface AddableInterface{
     public function addInfo(Blueprint &$table);
 
     /**
-     * puts the addable info into an array attribute to be later displayed
+     * puts the Addable info into an array attribute to be later displayed
      *
      * @return array the lengths of each column of addable
      */
     public function prepareRowColumns() : array;
 
     /**
-     * display the current addable to console
+     * display the current Addable to console
      *
      * @return void
      */

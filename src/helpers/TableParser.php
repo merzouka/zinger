@@ -10,6 +10,9 @@ use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
 use DatabaseDefinition\Src\TableType;
 
+/**
+ * parses the table definition files and retrieves their info
+ */
 class TableParser{
 
     #region constants
@@ -25,7 +28,6 @@ class TableParser{
     #endregion
 
     #region methods
-
     public static function getPath(TableType $type) : string{
         if ($type == TableType::Base){
             $type = TableType::Table;
@@ -85,16 +87,29 @@ class TableParser{
     }
 
     /**
-     * returns an array with the parts as keys for there associated text parts in $tableContents
+     * - returns an array with the parts as keys for there associated text parts in $tableContents.
+     * - throws a BaseTableError if the table to be accessed is a base table and the $type is not
+     * Base.
+     * - throw a CustomError if the table of type $type doesn't exist.
+     *
+     * @param TableType $type
+     * @param string $tableName
+     * @return array
      */
     public static function getDefinitionParts(TableType $type, string $tableName) : array{
         // if table already parsed skip
         $ind = array_search("NAME", static::$definitionParts);
-        if (isset(static::$fileContents[$ind]) && SO::removeWhiteSpaces(static::$fileContents[$ind]) === $tableName){
+        if (
+            isset(static::$fileContents[$ind]) &&
+            SO::removeWhiteSpaces(static::$fileContents[$ind]) === $tableName &&
+            !isset(static::$fileContents["isBase"])
+        ){
             return static::getIndexedParts();
         }
+        // empty up dependency arrays
         static::$definitionParts = [];
         static::$fileContents = [];
+
         $tablePath = static::getPath($type) . $tableName . TABLE_FILE_SUFFIX;
         if (!file_exists($tablePath)){
             throw new CustomError("Table '$tableName' of type '{$type->value}' doesn't exist.");
@@ -110,8 +125,11 @@ class TableParser{
         }
         $fileContents = SO::removeWhiteSpaces($fileContents);
         static::getPartsText($fileContents);
+        // to avoid sending base table info in the first conditional statement
+        if ($type === TableType::Base){
+            static::$fileContents["isBase"] = true;
+        }
         fclose($file);
-        var_dump(static::getIndexedParts());
         return static::getIndexedParts();
     }
     #endregion

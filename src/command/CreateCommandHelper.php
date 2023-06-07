@@ -22,6 +22,11 @@ class CreateCommandHelper{
     #endregion
 
     #region private methods
+    /**
+     * sets the path property of the class
+     *
+     * @return void
+     */
     private static function setPath(){
         if (isset($path)){
             return;
@@ -42,9 +47,7 @@ class CreateCommandHelper{
     private static function generalTable(array $tables, bool $isBase = false){
         $formatFile = !$isBase ? "tableFormat.php" : "baseTableFormat.php";
         $formatPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . "table" . DIRECTORY_SEPARATOR . $formatFile;
-        var_dump($tables);
         foreach ($tables as $tableName){
-            var_dump($tableName);
             if (TableParser::tableExists($tableName, TableType::Table)){
                 (new ConsoleOutputFormatter(OutputType::Error, "Table '$tableName' already exists."))->out();
                 echo PHP_EOL;
@@ -70,10 +73,10 @@ class CreateCommandHelper{
      * @param boolean $verbose true => enable output
      * @return void
      */
-    public static function pivot(?array $tables = null, bool $verbose = false){
+    public static function pivot(?array $tables = [], bool $verbose = false){
         static::setPath();
         $tablesFromUser = true;
-        if ($tables === null || in_array("*", $tables)){
+        if ($tables ===  [] || in_array("*", $tables)){
             $tables = [];
             foreach(scandir(static::$path . "tables") as $file){
                 if ($file === "." || $file === ".."){
@@ -87,7 +90,7 @@ class CreateCommandHelper{
         foreach ($tables as $table){
             try{
                 (TableFactory::createTable($table, TableType::Table, true))->createPivots($verbose);
-            } catch (CustomError|BaseTableError $e){
+            } catch (CustomError $e){
                 $error = true;
                 (new ConsoleOutputFormatter(OutputType::Error, $e->getMessage()))->out();
             } catch (BaseTableError $e){

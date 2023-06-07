@@ -15,25 +15,33 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
 
 
-
+/**
+ * responsible for adding column info to table definition, getting faker value of column,
+ * displaying column info
+ */
 class Column implements AddableInterface{
 
+    #region properties
     public string $name;
     public ?string $jsonName;
     public bool $fillable;
     public array $columnInfo;
     public int $columnNumber;
     private array $rowColumns;
+    #endregion
 
+    #region constructor
     public function __construct(array $columnInfo, int $columnNumber)
     {
         $this->columnInfo = $columnInfo;
         $this->columnNumber = $columnNumber;
         $this->name = $columnInfo["name"];
-        $this->jsonName = isset($columnInfo["json_name"]) ? $columnInfo["json_name"] : null;
+        $this->jsonName = $columnInfo["json_name"] ?? null;
         $this->fillable = $columnInfo["fillable"];
     }
+    #endregion
 
+    #region general methods
     /**
      * Generates a value according to the specified faker method
      */
@@ -83,7 +91,9 @@ class Column implements AddableInterface{
         ", ". SO::getMethod($this->columnInfo["faker"], false) .", ". 
         SO::getMethod($this->columnInfo["type"]). implode(", ", $this->columnInfo["properties"]). ";";
     }
+    #endregion
 
+    #region display
     public function prepareRowColumns() : array{
         $special = [GREEN.TICK.QUIT, RED.CROSS.QUIT];
         $this->rowColumns = [
@@ -105,6 +115,8 @@ class Column implements AddableInterface{
         ));
         echo "| $contents |" . PHP_EOL;
     }
+    #endregion
+
 }
 
 

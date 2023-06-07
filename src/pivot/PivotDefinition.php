@@ -17,6 +17,9 @@ use DatabaseDefinition\Src\TableType;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * responsible for using(reading, writing, displaying) normal pivot tables
+ */
 class PivotDefinition extends PivotTable
 {
     #region properties
@@ -106,9 +109,9 @@ class PivotDefinition extends PivotTable
      * @param string $primaryColumn
      * @return void
      */
-    public function fillIdsFromTable(string $columnName, TableDefinition $table, string $primaryColumn)
+    public function fillIdsFromTable(string $columnName, TableDefinition $table)
     {
-        $this->tableSampleIds[$columnName] = call_user_func_array(["App\\Models\\" . $table->modelName, "orderByRaw"], ["RAND()"])->take($this->numberOfRecords)->pluck($primaryColumn);
+        $this->tableSampleIds[$columnName] = call_user_func_array(["App\\Models\\" . $table->modelName, "orderByRaw"], ["RAND()"])->take($this->numberOfRecords)->pluck($table->primaryKeyName);
     }
     #endregion
 
@@ -132,9 +135,8 @@ class PivotDefinition extends PivotTable
             return;
         }
         foreach ($this->foreignKeys as $foreignKey) {
-            $table = new TableDefinition($foreignKey["on"]);
-            $primaryColumn = static::getPrimaryColumn($table);
-            $this->fillIdsFromTable($foreignKey["foreign"], $table, $primaryColumn->name);
+            $table = TableFactory::createTable($foreignKey["on"]);
+            $this->fillIdsFromTable($foreignKey["foreign"], $table);
         }
     }
 

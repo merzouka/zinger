@@ -4,15 +4,25 @@ namespace DatabaseDefinition\Src\Command;
 
 use DatabaseDefinition\Src\Console\ConsoleOutputFormatter;
 use DatabaseDefinition\Src\Console\OutputType;
+use DatabaseDefinition\Src\Error\CustomError;
 use Error;
 
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include AUTOLOADER;
 
 
+/**
+ * responsible for calling appropriate methods according to the provided command
+ */
 class Command{
 
 
+    /**
+     * execute command
+     *
+     * @param array $args
+     * @return void
+     */
     public static function run(array $args){
         try {
             @$className = "DatabaseDefinition\\Src\\Command\\" . ucfirst($args[0]) . "CommandHelper";
@@ -28,7 +38,7 @@ class Command{
                 $args = array_merge([$classMethods[0]], array_slice($args, 0));
             }
             call_user_func_array([$className, @$args[0]], [array_slice($args, 1), $verbose]);
-        } catch (Error){
+        } catch (CustomError){
             (new ConsoleOutputFormatter(OutputType::Error, "Invalid command."))->out();
             echo PHP_EOL;
         }

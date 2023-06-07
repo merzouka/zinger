@@ -10,10 +10,12 @@ use DatabaseDefinition\Src\Helpers\StringOper as SO;
 use DatabaseDefinition\Src\Helpers\TableParser;
 use DatabaseDefinition\Src\TableType;
 
+/**
+ * used to parse and format info of pivot, base, general tables
+ */
 class DefinitionHelper
 {
 
-    private static int $_records;
 
     #region General
     /**
@@ -37,7 +39,7 @@ class DefinitionHelper
     /**
      * returns an array:
      * "method" => method name
-     * "params" (if exists) => array(params)
+     * "params" => array(params), if no parameters were given params = empty array
      */
     public static function getMethodInfo(string $str): array
     {
@@ -73,10 +75,21 @@ class DefinitionHelper
     #region COLUMNS methods
     /**
      * gets the info of a table column defined under the COLUMNS section
+     * the return array = [
+     * "name" if not specified 'id' is used,
+     * "json_name" if null then omitted
+     * "fillable" by default false unless set to true
+     * "faker" = array ["method", "params"]
+     * "type" = array["method", "params"] the name of the column is always appended to "params"
+     * "properties" = empty array if non are given
+     * ]
+     *
+     * @param string $column
+     * @return array|null
      */
     public static function getColumnInfo(string $column): array|null
     {
-        $column = SO::splitIfNotBrackets(",", SO::removeWhiteSpaces($column));
+        $column = SO::splitIfNotBrackets(",", $column);
         if (count($column) < 5) {
             return null;
         }
@@ -112,13 +125,15 @@ class DefinitionHelper
 
     /**
      * gets info of columns flagged by [*PRIMARY*]
+     * return array = ["name", "json_name", "type", "properties"]
+     * faker is automatically set to null, and the column is not fillable
      *
      * @param string $column
      * @return array|null
      */
     public static function getPrimaryColumnInfo(string $column) : array|null{
         // remove [*PRIMARY*] tag
-        $column = substr(SO::removeWhiteSpaces($column), 11);
+        $column = substr($column, 11);
         $column = SO::splitIfNotBrackets(",", $column);
         // TODO: column contains jsonName, type, properties
         if (count($column) < 3){
@@ -157,7 +172,7 @@ class DefinitionHelper
             if (str_contains($column, "[*") && !str_contains($column, "[*PRIMARY*]")){
                 $parts = explode("*]", $column);
                 // tableName, tableType
-                $tableInfo = explode(",", substr(SO::removeWhiteSpaces($parts[0]), 2));
+                $tableInfo = explode(",", substr($parts[0], 2));
                 // get parent columns
                 $columns = array_merge($columns, static::getColumnsInfo(TableParser::getDefinitionParts(TableType::from(strtolower($tableInfo[1])), $tableInfo[0])["COLUMNS"], true));
                 $column = $parts[1];
@@ -182,7 +197,7 @@ class DefinitionHelper
 
     #region RELATIONS methods
     /**
-     * gets the informatoin of methods under the REALTIONS section
+     * gets the information of methods under the RELATIONS section
      */
     public static function getRelationMethodsInfo(string $str): array
     {
@@ -190,7 +205,7 @@ class DefinitionHelper
             return [];
         }
         $result = [];
-        foreach (SO::splitIfNotBrackets(",", SO::removeWhiteSpaces($str)) as $relationMethod) {
+        foreach (SO::splitIfNotBrackets(",", $str) as $relationMethod) {
             $methodInfo = static::getMethodInfo($relationMethod);
             $result = array_merge($result, [$methodInfo]);
         }
@@ -203,20 +218,24 @@ class DefinitionHelper
     /**
      * returns array of onUpdate|onDelete => value
      * the value is not incased in " or '
-     * duplicates are overriden by newer value assignements
+     * duplicates are overridden by newer value assignments
      */
     private static function getOnUpdateOnDelete(array $arr): array|null
     {
         $result = [];
         foreach ($arr as $method) {
             $methodInfo = explode(":", $method);
-            $result[$methodInfo[0]] = strtolower($methodInfo[1]);
+            $value = strtolower($methodInfo[1]);
+            $value = str_contains($value, "'") || str_contains($value, '"') ? substr($value, 1, -1) : $value;
+            $result[$methodInfo[0]] = $value;
         }
         return (count($result) > 0) ? $result : null;
     }
 
     /**
      * gets the info of a single foreign key
+     * return array ["foreign", "references", "on", "onUpdate", "onDelete"] 
+     * "onUpdate" and "onDelete" are omitted if not provided
      */
     private static function getForeignKeyInfo(string $str): array
     {
@@ -239,7 +258,7 @@ class DefinitionHelper
      */
     public static function getForeignKeysInfo(string $keys): array
     {
-        $keys = SO::splitIfNotBrackets(",", SO::removeWhiteSpaces($keys));
+        $keys = SO::splitIfNotBrackets(",", $keys);
         $result = [];
         foreach ($keys as $key) {
             $result = array_merge($result, [static::getForeignKeyInfo($key)]);
@@ -271,10 +290,10 @@ class DefinitionHelper
         $resourceRelatedOptions = ["resource", "collection"];
         // if null nothing to exclude
         if ($excludes !== null){
-            $excludes = array_map(fn($str) => strtolower($str),explode(",", SO::removeWhiteSpaces($excludes)));
+            $excludes = array_map(fn($str) => strtolower($str),explode(",", $excludes));
             // if in array only run migration command
             if (in_array("model", $excludes)){
-                $tableName = SO::removeWhiteSpaces($tableName);
+                $tableName = $tableName;
                 return ["php artisan make:migration create_{$tableName}_table"];
             }
             $isApi = !in_array("api", $excludes);
@@ -316,13 +335,13 @@ class DefinitionHelper
      */
     public static function getInfoByPart(string $part, array &$fileContents) : mixed
     {
-        $modelName = (isset($fileContents["MODEL"])) ? SO::removeWhiteSpaces($fileContents["MODEL"]) : SO::getModelName(SO::removeWhiteSpaces($fileContents["NAME"]));
+        $modelName = $fileContents["MODEL"] ?? SO::getModelName($fileContents["NAME"]);
         return match ($part) {
             "EXCLUDE" => static::getCommandsInfo($fileContents["EXCLUDE"] ?? null, $modelName, $fileContents["NAME"]),
-            "NAME" => SO::removeWhiteSpaces($fileContents["NAME"]),
-            "MODEL" => (isset($fileContents["MODEL"])) ? SO::removeWhiteSpaces($fileContents["MODEL"]) : $modelName,
-            "HAS_TIMESTAMPS" => (isset($fileContents["HAS_TIMESTAMPS"])) ? (strtolower(SO::removeWhiteSpaces($fileContents["HAS_TIMESTAMPS"])) == "false" ? false : true) : true,
-            "RECORDS" => (isset($fileContents["RECORDS"])) ? (int) SO::removeWhiteSpaces($fileContents["RECORDS"]) : 0,
+            "NAME" => $fileContents["NAME"],
+            "MODEL" => $fileContents["MODEL"] ?? $modelName,
+            "HAS_TIMESTAMPS" => (isset($fileContents["HAS_TIMESTAMPS"])) ? (strtolower($fileContents["HAS_TIMESTAMPS"]) == "false" ? false : true) : true,
+            "RECORDS" => (isset($fileContents["RECORDS"])) ? (int) $fileContents["RECORDS"] : 0,
             "FOREIGN_KEYS" => (isset($fileContents["FOREIGN_KEYS"])) ? static::getForeignKeysInfo($fileContents["FOREIGN_KEYS"]) : [],
             "RELATIONS" => (isset($fileContents["RELATIONS"])) ? static::getRelationMethodsInfo($fileContents["RELATIONS"]) : [],
             "COLUMNS" => static::getColumnsInfo($fileContents["COLUMNS"])

@@ -7,4 +7,4 @@ use Error;
 /**
  * a custom error class for internal use
  */
-class CustomError extends Error{}
+class SyntaxError extends Error{}

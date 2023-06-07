@@ -4,7 +4,6 @@ namespace DatabaseDefinition\Src\Relationship;
 
 use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
-use DatabaseDefinition\Src\Helpers\TableParser;
 use DatabaseDefinition\Src\Pivot\Morph;
 use DatabaseDefinition\Src\Pivot\MorphPivotDefinition;
 use DatabaseDefinition\Src\Pivot\PivotDefinition;
@@ -16,6 +15,10 @@ use DatabaseDefinition\Src\TableType;
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include AUTOLOADER;
 
+/**
+ * responsible for defining relations between tables, creating needed pivot tables,
+ * displaying relations info
+ */
 class Relation
 {   
     #region properties
@@ -86,10 +89,9 @@ class Relation
      * @return void
      */
     private function fillHasBelongsToAtt(array &$params, bool $hasMany = false){
-        $this->parameters["fnName"] = isset($params[1]) ? $params[1]:
+        $this->parameters["fnName"] = $params[1] ??
         (!$hasMany ? SO::getSingular($this->related->name) : $this->related->name);
-        $this->parameters["foreign"] = isset($params[2]) ? $params[2] :
-        SO::getSingular($this->related->name) . "_id";
+        $this->parameters["foreign"] = $params[2] ?? SO::getSingular($this->related->name) . "_id";
     }
 
     /**
@@ -100,10 +102,10 @@ class Relation
      * @return void
      */
     private function fillBelongsToManyAtt(array &$params, bool $forceNew){
-        $this->parameters["fnName"] = isset($params[1]) ? $params[1] : $this->related->name;
-        $ownerForeign = (isset($params[2])) ? $params[2] : "";
-        $relatedForeign = (isset($params[3])) ? $params[3] : "";
-        $tableName = (isset($params[4])) ? $params[4] : "";
+        $this->parameters["fnName"] = $params[1] ?? $this->related->name;
+        $ownerForeign = $params[2] ?? "";
+        $relatedForeign = $params[3] ?? "";
+        $tableName = $params[4] ?? "";
         $this->pivot = PivotDefinition::toBeWritten(
             $this->owner->name,
             $this->related->name,
@@ -139,13 +141,12 @@ class Relation
         $followOwner = $through ? ["otherMorphed", "morphed"] : ["morphed", "otherMorphed"];
         $this->parameters["ownerPrefix"] = $ownerPrefix = $params[$start++];
         $this->parameters["relatedPrefix"] = $relatedPrefix = $params[$start++];
-        $this->parameters["pivotTableName"] = $tableName = (isset($params[$start])) ? $params[$start++]:
-        SO::getPivotName($ownerPrefix, $relatedPrefix);
-        $this->parameters["fnName"] = isset($params[$start]) ? $params[$start++]:
+        $this->parameters["pivotTableName"] = $tableName = $params[$start++] ?? SO::getPivotName($ownerPrefix, $relatedPrefix);
+        $this->parameters["fnName"] = $params[$start++] ??
         (!$many ? SO::getSingular($relatedPrefix) : SO::getPlural($relatedPrefix));
         // either owner has type then is morphed or both have type and the order doesn't matter
-        $morphedTypeLength = (isset($params[$start])) ? $params[$start++] : 255; 
-        $otherMorphedTypeLength = (isset($params[$start])) ? $params[$start] : 255;
+        $morphedTypeLength = $params[$start++] ?? 255; 
+        $otherMorphedTypeLength = $params[$start] ?? 255;
         $type = $manyMorphs ? Morph::Many : Morph::One;
         $this->pivot = MorphPivotDefinition::toBeWritten(
             $type,

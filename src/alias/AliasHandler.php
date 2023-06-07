@@ -5,13 +5,19 @@ namespace DatabaseDefinition\Src\Alias;
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include \AUTOLOADER;
 
+
 use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
 
+/**
+ * class used to parse alias files and get/write/display aliases
+ */
 class AliasHandler{
 
+    #region properties
     private static array $aliases;
     private static string $aliasesPath;
+    #endregion
 
     #region helpers
     /**
@@ -33,8 +39,12 @@ class AliasHandler{
                 continue;
             }
             // $aliasArray is in the form aliasArrayName = array
-            $aliasArray = explode("=", $aliasArray);
-            $toFill[$aliasArray[0]] = static::getAliasArray($aliasArray[1]);
+            $aliasArray = SO::splitIfNotBrackets("=", $aliasArray);
+            try {
+                $toFill[$aliasArray[0]] = static::getAliasArray($aliasArray[1]);
+            } catch (CustomError $e){
+                throw new CustomError($e->getMessage() . " in '" . BOLD . $aliasArray[0] . QUIT . "'.");
+            }
         }
         fclose($file);
     }
@@ -79,8 +89,12 @@ class AliasHandler{
      * @return array
      */
     private static function getAliasArray(string $str) : array{
+        if (str_contains($str, "=")){
+            throw new CustomError("Alias array cannot contain '=' use ':' instead,");
+        } 
         // remove [] and split array
         $str = SO::splitIfNotBrackets(",", substr($str, 1, -1));
+        
         $result = [];
         foreach ($str as $alias){
             if ($alias === ""){
@@ -144,8 +158,14 @@ class AliasHandler{
         return static::$aliasesPath;
     }
 
-    
-
+    /**
+     * returns the alias array that matches $aliasName
+     *
+     * @param string $aliasName the name to match
+     * @param boolean $getGeneral if false fail if no matches were found for $aliasName,
+     * without getting GENERAL
+     * @return array|null
+     */
     public static function getArrayByNameOrGENERAL(string $aliasName = "", bool $getGeneral = true) : array|null{
         if (!isset(static::$aliases)){
             static::loadAliases();
@@ -238,14 +258,35 @@ class AliasHandler{
     #endregion
 
     #region write functions
+    /**
+     * this method only adds the modelName and tableName to the array
+     * use persistMODELSToFile to save them
+     *
+     * @param string $modelName
+     * @param string $tableName
+     * @return void
+     */
     public static function registerTableModel(string $modelName, string $tableName){
-        static::loadAliases();
-        $modelAliases = [];
-        if (isset(static::$aliases["MODELS"])){
-            $modelAliases = static::$aliases["MODELS"];
+        if (!isset(static::$aliases)){
+            static::loadAliases();
+        }
+        if (!isset(static::$aliases["MODELS"])){
+            static::$aliases["MODELS"] = [];
+        } 
+        static::$aliases["MODELS"][$modelName] = $tableName;
+    }
+
+    /**
+     * saves the MODELS array to dependencies.as
+     *
+     * @return void
+     */
+    public static function persistMODELSToFile(){
+        if (!isset(static::$aliases["MODELS"])){
+            return;
         }
         static::addMODELSAlias([
-            "MODELS" => array_merge($modelAliases, [$modelName => $tableName])
+            "MODELS" => static::$aliases["MODELS"]
         ]);
     }
     
@@ -284,4 +325,3 @@ class AliasHandler{
     }
     #endregion
 }
-

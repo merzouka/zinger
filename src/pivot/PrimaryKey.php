@@ -12,6 +12,9 @@ use Error;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
 
+/**
+ * handles columns tagged as [*PRIMARY*]
+ */
 class PrimaryKey implements AddableInterface{
 
     public string $name;
@@ -28,7 +31,7 @@ class PrimaryKey implements AddableInterface{
      *
      * @param string $name the name of the primary key
      * @param array $columnInfo array of the primary key of a table in the relationship
-     * @return void
+     * @return PrimaryKey
      */
     public static function toBeWritten(string $name, array $columnInfo) : PrimaryKey{
         $obj = new PrimaryKey();

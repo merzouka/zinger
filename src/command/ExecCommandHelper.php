@@ -2,17 +2,21 @@
 
 namespace DatabaseDefinition\Src\Command;
 
+use DatabaseDefinition\Src\Alias\AliasHandler;
 use DatabaseDefinition\Src\Console\ConsoleOutputFormatter;
 use DatabaseDefinition\Src\Console\OutputType;
+use DatabaseDefinition\Src\Database;
 use DatabaseDefinition\Src\Error\BaseTableError;
 use DatabaseDefinition\Src\Error\CustomError;
 use DatabaseDefinition\Src\Helpers\TableParser;
-use DatabaseDefinition\Src\TableFactory;
 use DatabaseDefinition\Src\TableType;
 
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include AUTOLOADER;
 
+/**
+ * handles exec commands
+ */
 class ExecCommandHelper{
     
     #region private methods
@@ -42,10 +46,14 @@ class ExecCommandHelper{
             static::fillTables($tables, TableType::Table);
             static::fillTables($tables, TableType::Pivot);
         }
+        $tables = Database::orderAndGetTables($tables);
         $error = false;
         foreach ($tables as $table){
             try{
-                TableFactory::createTable($table)->exec($verbose);
+                $table->exec($verbose);
+                if (isset($table->modelName)){
+                    AliasHandler::registerTableModel($table->modelName, $table->name);
+                }
             } catch (BaseTableError $e){
                 if ($fromUser){
                     (new ConsoleOutputFormatter(OutputType::Error, "Cannot execute commands for base table."))->out();
@@ -59,6 +67,7 @@ class ExecCommandHelper{
         if ($error){
             echo PHP_EOL;
         }
+        AliasHandler::persistMODELSToFile();
     }
     #endregion
 }

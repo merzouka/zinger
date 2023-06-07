@@ -10,11 +10,12 @@ use DatabaseDefinition\Src\Helpers\DefinitionHelper as DH;
 use DatabaseDefinition\Src\Helpers\StringOper as SO;
 use DatabaseDefinition\Src\Table\Column;
 use DatabaseDefinition\Src\TableFactory;
-use DatabaseDefinition\Src\TableType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-
+/**
+ * responsible for using tables and writing to model files
+ */
 class TableDefinition extends Table
 {
     #region properties 
@@ -22,6 +23,7 @@ class TableDefinition extends Table
     public string $primaryKeyName;
     public array $fillable;
     public array $includes;
+    public array $foreignTableSampleIds;
     #endregion
 
     #region constructor
@@ -32,6 +34,9 @@ class TableDefinition extends Table
         $this->modelName = DH::getInfoByPart("MODEL", $fileContents);
         // adding columns
         $i = 0;
+        $this->fillable = [];
+        $this->primaryKeyName = "";
+        $this->columns = [];
         foreach (DH::getInfoByPart("COLUMNS", $fileContents) as $column){
             if ($column["type"]["method"] !== SO::translateType($column["type"]["method"])){
                 $this->primaryKeyName = $column["name"];
@@ -94,6 +99,45 @@ class TableDefinition extends Table
     public function model() : Model{
         $modelClass = "App\\Models\\" . $this->modelName;
         return new $modelClass();
+    }
+
+    /**
+     * gets some sample ids to be later used in the seeding
+     *
+     * @param TableDefinition $table
+     * @param string $primaryColumn
+     * @return void
+     */
+    public function fillIdsFromTable(string $columnName, TableDefinition $table)
+    {
+        $this->foreignTableSampleIds[$columnName] = call_user_func_array(["App\\Models\\" . $table->modelName, "orderByRaw"], ["RAND()"])->take($this->numberOfRecords)->pluck($table->primaryKeyName);
+    }
+    
+    public function fillIdsFromRelated(bool $rehydrate = false)
+    {
+        if (isset($this->foreignTableSampleIds) && !$rehydrate) {
+            return;
+        }
+        $this->foreignTableSampleIds = [];
+        foreach ($this->foreignKeys as $foreignKey) {
+            $table = TableFactory::createTable($foreignKey["on"]);
+            $this->fillIdsFromTable($foreignKey["foreign"], $table);
+        }
+    }
+
+    public function getFactoryArray(?array $arr = null): array
+    {
+        $this->fillIdsFromRelated();
+        $result = [];
+        $predefinedKeys = array_keys($arr);
+        // fill columns that reference another table
+        foreach ($this->foreignTableSampleIds as $columnName => &$samples){
+            if (in_array($columnName, $predefinedKeys)){
+                continue;
+            }
+            $result[$columnName] = $samples[array_rand($samples)];
+        }
+        return array_merge($result, parent::getFactoryArray($arr));
     }
     #endregion
 

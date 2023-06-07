@@ -18,6 +18,9 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * parent class of all pivot tables
+ */
 class PivotTable extends Table{
 
     #region properties

@@ -13,6 +13,9 @@ use DatabaseDefinition\Src\TableType;
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include AUTOLOADER;
 
+/**
+ * handles show command
+ */
 class ShowCommandHelper{
 
     #region private methods

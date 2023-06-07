@@ -11,6 +11,9 @@ use DatabaseDefinition\Src\TableType;
 include_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . "helpers" . DIRECTORY_SEPARATOR . "constants.php";
 include AUTOLOADER;
 
+/**
+ * handles delete commands
+ */
 class DeleteCommandHelper{
 
     #region constants
@@ -132,37 +135,29 @@ class DeleteCommandHelper{
     private static function deleteTableByType(
         TableType $type,
         array $tables = [],
-        bool $forceDelete = false
     ){
-        if ($tables === [] && !$forceDelete){
+        if ($tables === [] || $tables === ["*"]){
             (new ConsoleOutputFormatter(OutputType::Error, "Cannot delete all tables"))->out();
             echo PHP_EOL;
             return;
         } 
         $path = TableParser::getPath($type);
-        if ($forceDelete || $tables === ["*"]){
-            foreach (scandir($path) as $file){
-                if (!in_array($file, static::EXCLUDES)){
-                    unlink($path.$file);
-                }
-            }
-            return;
-        }
-        $hasDeleted = false;
+        $printNewLine = false;
         $error = false;
         $errorPrefix = ucfirst($type->value);
         foreach ($tables as $table){
             @unlink($path.$table.TABLE_FILE_SUFFIX) or $error = true;
             if (!$error){
                 (new ConsoleOutputFormatter(OutputType::Deleted, "table [" . BOLD . $path.$table.TABLE_FILE_SUFFIX . QUIT . "]."))->out();
-                $hasDeleted = true;
+                $printNewLine = true;
             }
             if ($error){
                 (new ConsoleOutputFormatter(OutputType::Error, "$errorPrefix '$table' does't exist."))->out();
                 $error = false;
+                $printNewLine = true;
             }
         }
-        if ($hasDeleted || $error){
+        if ($printNewLine){
             echo PHP_EOL;
         }
     }
